@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const requirejs = require('requirejs');
 const amodroConfig = require('amodro-trace/config');
-const amodroParse = require('./lib/parse');
+const amodroParse = require('amodro-trace/parse');
 const LRU = require('lru-cache');
 
 /**

@@ -88,7 +88,7 @@
 		"lint": "node ./node_modules/eslint/bin/eslint extension.js test"
 	},
 	"dependencies": {
-		"amodro-trace": "^1.0.2",
+		"amodro-trace": "prantlf/amodro-trace#public-parse",
 		"lru-cache": "^4.1.1",
 		"requirejs": "^2.3.5"
 	},
