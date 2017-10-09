@@ -9,6 +9,5 @@
 coverage/**
 examples/**
 jsconfig.json
-node_modules/**
 test/**
 testFiles/**
