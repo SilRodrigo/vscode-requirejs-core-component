@@ -65,7 +65,6 @@
 			"editor/context": [
 				{
 					"command": "requireModuleSupport.goToDefinitionModule",
-					"alt": "editor.action.goToDeclaration",
 					"when": "editorLangId == javascript",
 					"group": "navigation"
 				}
