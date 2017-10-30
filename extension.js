@@ -348,7 +348,7 @@ class ReferenceProvider {
 		let astRoot = getCachedVersionedObject(this.parsedModuleCache, document);
 
 		if (!astRoot) {
-			astRoot = amodroParse.parseFileContents(document.fileName, document.getText(), { loc: true });
+			astRoot = amodroParse.parse(document.getText(), { loc: true });
 			setCachedVersionedObject(this.parsedModuleCache, document, astRoot);
 		}
 
@@ -365,9 +365,11 @@ class ReferenceProvider {
 		let dependencies = getCachedVersionedObject(this.moduleDependencyCache, document);
 
 		if (!dependencies) {
-			dependencies = amodroParse.findDependencies(document.fileName, astRoot);
+			dependencies = amodroParse.findDependencies(astRoot);
+			let modules = dependencies.modules;
+
 			dependencies = dependencies.params.reduce(function (result, param, index) {
-				result[param] = dependencies[index];
+				result[param] = modules[index];
 
 				return result;
 			}, {});
