@@ -1,18 +1,7 @@
-const vscode = require('vscode');
 const { normalize } = require('path');
 const rootPath = __dirname.replace('test', '').replace(/\\/g, '/');
-const vscodeStub = Object.assign(vscode, {
-	workspace: {
-		rootPath,
-		openTextDocument: vscode.workspace.openTextDocument,
-		getConfiguration () {
-			return { get: conf => conf === 'modulePath' ? 'testFiles' : false };
-		}
-	}
-});
 const assert = require('assert');
-const proxyquire = require('proxyquire');
-const { ReferenceProvider } = proxyquire('../extension', { vscode: vscodeStub });
+const { ReferenceProvider } = require('../extension');
 const referenceProvider = new ReferenceProvider();
 
 suite('searchModule', () => {

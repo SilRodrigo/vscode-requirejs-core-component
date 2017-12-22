@@ -2,7 +2,7 @@
 	"name": "require-js",
 	"displayName": "Require Module Support",
 	"description": "Adds require.js AMD module goto definition support.",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"publisher": "lici",
 	"icon": "logo.png",
 	"engines": {
@@ -83,7 +83,7 @@
 	},
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "node ./node_modules/vscode/bin/test",
+		"test": "export CODE_TESTS_WORKSPACE=CODE_TESTS_PATH/../testFiles && node ./node_modules/vscode/bin/test",
 		"lint": "node ./node_modules/eslint/bin/eslint extension.js test"
 	},
 	"dependencies": {
