@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.1.9] - 2017-22-12
+### Added
+
+- Added support for comments in require dependency list. Special thanks to [prantlf](https://github.com/prantlf)
+- Fixed problem navigating to an inline require statement's module.
+
+
 ## [0.1.7] - 2017-21-12
 ### Added
 
