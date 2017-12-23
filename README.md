@@ -84,6 +84,12 @@ Example:
 
 This will ensure, that a module reference like "css!views/panel" will be handled as "css!views/panel.css" before resolving the actual module path.
 
+If you use pure CommonJS syntax instead of AMD in your sources (not CommonJS wrappers in `define()` statements) and then compile them together with `r.js`, which generates AMD wrappers for you, you have to set the following flag to `true`:
+
+    "requireModuleSupport.enableCjsModules"
+
+The module lookup works only in AMD wrappers or in simplified CommonJS wrappers by default.
+
 ### RequireJS Config Files
 
 RequireJS configuration properties like `paths`, `bundles` and `config` are usually maintained in a separate file in a single `require.config()` statement. This file can be evaluated, when the project is loaded on debug pages, when the project is built (for root components) and in other situations - like this editor plugin.

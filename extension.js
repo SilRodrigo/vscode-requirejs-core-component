@@ -365,7 +365,10 @@ class ReferenceProvider {
 		let dependencies = getCachedVersionedObject(this.moduleDependencyCache, document);
 
 		if (!dependencies) {
-			dependencies = amodroParse.findDependencies(astRoot);
+			const enableCjsModules = vscode.workspace.getConfiguration('requireModuleSupport').get('enableCjsModules');
+			const findDependencies = enableCjsModules ? amodroParse.findCjsDependencies : amodroParse.findDependencies;
+
+			dependencies = findDependencies(astRoot);
 			let modules = dependencies.modules;
 
 			dependencies = dependencies.params.reduce(function (result, param, index) {

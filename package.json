@@ -26,6 +26,11 @@
 					"default": "",
 					"description": "Path of the RequireJS configuration file relative to workspace root"
 				},
+				"requireModuleSupport.enableCjsModules": {
+					"type": "boolean",
+					"default": false,
+					"description": "Parse source files as pure CommonJS modules"
+				},
 				"requireModuleSupport.moduleCacheSize": {
 					"type": "integer",
 					"default": 100,
@@ -48,11 +53,11 @@
 				}
 			}
 		},
-        "commands": [
-            {
-                "command": "requireModuleSupport.goToDefinitionModule",
-                "title": "Go to Definition Module"
-            }
+		"commands": [
+			{
+				"command": "requireModuleSupport.goToDefinitionModule",
+				"title": "Go to Definition Module"
+			}
 		],
 		"keybindings": [
 			{
