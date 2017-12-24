@@ -1,4 +1,24 @@
 const amodroParse = require('amodro-trace/parse');
+const esprima = require('esprima');
+
+/**
+	 * Parses the input JavaScript text and returns a AST of it. Expects a
+	 * JavaScript content. The returned object can be used later in other calls,
+	 * or to other module analysis.
+	 *
+	 * @param {String} contents File contents of an AMD module.
+	 * @param {Object} options Optional. Options for the `esprima` parser: Only
+	 * `range` and `loc` properties are recognized.
+	 * @returns {Object} Parsed AST root.
+	 */
+function parse (contents, options) {
+	const localOptions = options || {};
+
+	return esprima.parse(contents, {
+		range: localOptions.range,
+		loc: localOptions.loc
+	});
+}
 
 /**
 	 * Finds the first occurrence of the specified identifier.
@@ -210,5 +230,6 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 module.exports = {
 	findIdentifier: findIdentifier,
 	findIdentifierWithinRange: findIdentifierWithinRange,
-	findOriginatingModuleDependency: findOriginatingModuleDependency
+	findOriginatingModuleDependency: findOriginatingModuleDependency,
+	parse: parse
 };

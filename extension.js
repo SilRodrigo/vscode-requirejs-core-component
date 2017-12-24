@@ -73,7 +73,7 @@ class DefinitionProvider {
 		let astRoot = getCachedVersionedObject(this.parsedModuleCache, document);
 
 		if (!astRoot) {
-			astRoot = amodroParse.parse(document.getText(), { loc: true });
+			astRoot = codeParser.parse(document.getText(), { loc: true });
 			setCachedVersionedObject(this.parsedModuleCache, document, astRoot);
 		}
 
