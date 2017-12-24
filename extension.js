@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const amodroParse = require('amodro-trace/parse');
 const codeParser = require('./src/codeParser');
 const moduleResolver = require('./src/moduleResolver');
+const goToDefinitionModule = require('./src/goToDefinitionModule');
 const LRU = require('lru-cache');
 
 /**
@@ -166,50 +167,6 @@ class DefinitionProvider {
 
 		return Promise.resolve(undefined);
 	}
-}
-
-/**
-	 * Opens the specified document in an editor window and selects
-	 * the specified range of characters there.
-	 * @param {Location} location Document URI and selected range
-	 * @returns {Promise} Operation finish
-	 */
-function openDocumentAtLocation (location) {
-	return vscode.workspace.openTextDocument(location.uri)
-		.then(vscode.window.showTextDocument)
-		.then(editor => {
-			const range = location.range;
-
-			editor.selection = new vscode.Selection(range.end, range.start);
-			editor.revealRange(range);
-		});
-}
-
-/**
-	 * Implements ther "Go to Definition Module" editor command.
-	 * @param {DefinitionProvider} definitionProvider An instance of this definition provider
-	 * @param {TextEditor} editor The current editor
-	 * @returns {Promise} Command finish
-	 */
-function goToDefinitionModule (definitionProvider, editor) {
-	// Default to "Go to Definition" for non-JavaScript files.
-	if (editor.document.languageId !== 'javascript') {
-		return vscode.commands.executeCommand('editor.action.goToDeclaration');
-	}
-
-	return definitionProvider.provideDefinition(editor.document, editor.selection.active)
-		.then(location => {
-			// Prefer opening the found module right away to showing the peek view
-			// for multiple symbol occurrences. There are always multiple of them;
-			// the first one is the formal parameter for the dependent module
-			// and the second one is the identifier in the originating module.
-			if (location && !Array.isArray(location)) {
-				return openDocumentAtLocation(location);
-			}
-
-			// Default to "Go to Definition", if this provider did not find anything.
-			return vscode.commands.executeCommand('editor.action.goToDeclaration');
-		});
 }
 
 Object.assign(exports, {
