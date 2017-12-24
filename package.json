@@ -69,7 +69,7 @@
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "node ./node_modules/vscode/bin/test",
-		"lint": "node ./node_modules/eslint/bin/eslint extension.js test"
+		"lint": "node ./node_modules/eslint/bin/eslint extension.js src test"
 	},
 	"devDependencies": {
 		"goodparts": "^1.2.1",
