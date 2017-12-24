@@ -23,7 +23,7 @@ suite('extension', () => {
 			registerDefinitionProviderStub.getCall(0).args,
 			[
 				'javascript',
-				new extension.ReferenceProvider()
+				new extension.DefinitionProvider()
 			]
 		);
 	});

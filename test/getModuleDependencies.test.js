@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { ReferenceProvider } = require('../extension');
-const referenceProvider = new ReferenceProvider();
+const { DefinitionProvider } = require('../extension');
+const definitionProvider = new DefinitionProvider();
 
 suite('getModuleDependencies', () => {
 	test('should return object with module path and name', () => {
@@ -10,7 +10,7 @@ suite('getModuleDependencies', () => {
 			moduleB: './path/to/b'
 		};
 
-		assert.deepEqual(referenceProvider.getModuleDependencies({
+		assert.deepEqual(definitionProvider.getModuleDependencies({
 			fileName: '1',
 			version: 1
 		}, input), expected);
@@ -26,7 +26,7 @@ suite('getModuleDependencies', () => {
 			b: 'moduleB'
 		};
 
-		assert.deepEqual(referenceProvider.getModuleDependencies({
+		assert.deepEqual(definitionProvider.getModuleDependencies({
 			fileName: '2',
 			version: 1
 		}, input), expected);
@@ -42,7 +42,7 @@ suite('getModuleDependencies', () => {
 			b: 'moduleB'
 		};
 
-		assert.deepEqual(referenceProvider.getModuleDependencies({
+		assert.deepEqual(definitionProvider.getModuleDependencies({
 			fileName: '3',
 			version: 1
 		}, input), expected);
@@ -55,7 +55,7 @@ suite('getModuleDependencies', () => {
 			b: 'moduleB'
 		};
 
-		assert.deepEqual(referenceProvider.getModuleDependencies({
+		assert.deepEqual(definitionProvider.getModuleDependencies({
 			fileName: '4',
 			version: 1
 		}, input), expected);

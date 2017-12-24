@@ -319,7 +319,7 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 	};
 }
 
-class ReferenceProvider {
+class DefinitionProvider {
 	/**
 		 * Initializes a new instance.
 		 */
@@ -456,17 +456,17 @@ function openDocumentAtLocation (location) {
 
 /**
 	 * Implements ther "Go to Definition Module" editor command.
-	 * @param {ReferenceProvider} referenceProvider An instance of this definition provider
+	 * @param {DefinitionProvider} definitionProvider An instance of this definition provider
 	 * @param {TextEditor} editor The current editor
 	 * @returns {Promise} Command finish
 	 */
-function goToDefinitionModule (referenceProvider, editor) {
+function goToDefinitionModule (definitionProvider, editor) {
 	// Default to "Go to Definition" for non-JavaScript files.
 	if (editor.document.languageId !== 'javascript') {
 		return vscode.commands.executeCommand('editor.action.goToDeclaration');
 	}
 
-	return referenceProvider.provideDefinition(editor.document, editor.selection.active)
+	return definitionProvider.provideDefinition(editor.document, editor.selection.active)
 		.then(location => {
 			// Prefer opening the found module right away to showing the peek view
 			// for multiple symbol occurrences. There are always multiple of them;
@@ -482,21 +482,21 @@ function goToDefinitionModule (referenceProvider, editor) {
 }
 
 Object.assign(exports, {
-	ReferenceProvider,
+	DefinitionProvider,
 	activate (context) {
-		const referenceProvider = new ReferenceProvider();
+		const definitionProvider = new DefinitionProvider();
 
 		initializeRequireJs();
 		context.subscriptions.push(
 			vscode.workspace.onDidChangeConfiguration(() => {
 				initializeRequireJs();
-				referenceProvider.clearVersionObjectCaches();
+				definitionProvider.clearVersionObjectCaches();
 			}));
 		context.subscriptions.push(
 			vscode.languages.registerDefinitionProvider(
-				'javascript', referenceProvider));
+				'javascript', definitionProvider));
 		context.subscriptions.push(
 			vscode.commands.registerTextEditorCommand('requireModuleSupport.goToDefinitionModule',
-				goToDefinitionModule.bind(null, referenceProvider)));
+				goToDefinitionModule.bind(null, definitionProvider)));
 	}
 });
