@@ -2,7 +2,7 @@
 	"name": "require-js",
 	"displayName": "Require Module Support",
 	"description": "Adds require.js AMD module goto definition support.",
-	"version": "0.1.6",
+	"version": "0.1.9",
 	"publisher": "lici",
 	"icon": "logo.png",
 	"engines": {
@@ -21,6 +21,11 @@
 			"type": "object",
 			"title": "Require Module Support",
 			"properties": {
+				"requireModuleSupport.configFile": {
+					"type": "string",
+					"default": "",
+					"description": "Path of the RequireJS configuration file relative to workspace root"
+				},
 				"requireModuleSupport.modulePath": {
 					"type": "string",
 					"default": "",
@@ -30,6 +35,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Should we search inside the landing file?"
+				},
+				"requireModuleSupport.pluginExtensions": {
+					"type": "object",
+					"default": {},
+					"description": "Assigns default file extensions to target module paths used with RequireJS plugins"
 				}
 			}
 		},
@@ -68,8 +78,12 @@
 	},
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "node ./node_modules/vscode/bin/test",
+		"test": "export CODE_TESTS_WORKSPACE=CODE_TESTS_PATH/../testFiles && node ./node_modules/vscode/bin/test",
 		"lint": "node ./node_modules/eslint/bin/eslint extension.js src test"
+	},
+	"dependencies": {
+		"amodro-trace": "^1.0.2",
+		"requirejs": "^2.3.5"
 	},
 	"devDependencies": {
 		"goodparts": "^1.2.1",

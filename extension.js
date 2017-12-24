@@ -1,6 +1,38 @@
+/* eslint-disable max-lines */
 const vscode = require('vscode');
 const path = require('path');
+const fs = require('fs');
+const requirejs = require('requirejs');
+const amodroConfig = require('amodro-trace/config');
 const goToDefinitionModule = require('./src/goToDefinitionModule');
+
+// Initialize or re-initialize requirejs for the activated context.
+function initializeRequireJs () {
+	const requireModuleSupport = vscode.workspace.getConfiguration('requireModuleSupport');
+	const rootPath = vscode.workspace.rootPath;
+
+	// Clean up requirejs configuration from the previously activated context.
+	// See https://github.com/requirejs/requirejs/issues/1113 for more information.
+	delete requirejs.s.contexts._;
+
+	// Handle the existing modulePath property as baseUrl for require.config()
+	// to support simple scenarios. More complex projects should supply also
+	// configFile in addition to baseUrl to resolve any module path.
+	requirejs.config({ baseUrl: path.join(rootPath, requireModuleSupport.get('modulePath')) });
+
+	// Reuse the configuration for debugging a requirejs project for editing too.
+	// Prevent maintaining the same configuration in settings.json.
+	const configFile = requireModuleSupport.get('configFile');
+
+	if (configFile) {
+		const configContent = fs.readFileSync(path.join(rootPath, configFile), 'utf-8');
+		const config = amodroConfig.find(configContent);
+
+		if (config) {
+			requirejs.config(config);
+		}
+	}
+}
 
 class ReferenceProvider {
 	/**
@@ -42,14 +74,21 @@ class ReferenceProvider {
 		let list, result;
 		const array = /\[[^\]]*\]/gi;
 		const params = /function\s*\([^)]*/gi;
+		// Remove comments, which would make JSON.parse fail. Not the optimal solution;
+		// see https://stackoverflow.com/a/15123777/623816 for more information.
+		const cleanedStr = str.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '');
 
-		let m = array.exec(str);
+		let m = array.exec(cleanedStr);
 
 		if (m) {
 			list = JSON.parse(m[0].split('\'').join('"'));
 		}
 
-		m = params.exec(str);
+		if (!list || list.length === 0) {
+			return {};
+		}
+
+		m = params.exec(cleanedStr);
 
 		if (m) {
 			const test = /([^\s,]+)/g;
@@ -126,6 +165,44 @@ class ReferenceProvider {
 	}
 
 	/**
+		 * Computes an absolute path to the file representing the RequireJS module dependency.
+		 * @param {String} modulePath Require path of the target module
+		 * @param {String} currentFilePath Current file path to start search from
+		 * @returns {String} the file location
+		 */
+	resolveModulePath (modulePath, currentFilePath) {
+		// Plugins, which load other files follow the syntax "plugin!parameter",
+		// where "parameter" is usually another module path to be resolved.
+		const pluginSeparator = modulePath.indexOf('!');
+		let filePath;
+
+		if (pluginSeparator > 0) {
+			const pluginExtensions = vscode.workspace.getConfiguration('requireModuleSupport').get('pluginExtensions');
+			const pluginName = modulePath.substr(0, pluginSeparator);
+
+			filePath = modulePath.substr(pluginSeparator + 1);
+			// Plugins may optionally append their known file extensions.
+			if (pluginExtensions) {
+				const pluginExtension = pluginExtensions[pluginName];
+
+				if (pluginExtension && !filePath.endsWith(pluginExtension)) {
+					filePath += pluginExtension;
+				}
+			}
+		} else {
+			// The requirejs.toUrl method does not append '.js' to the resolved path.
+			filePath = modulePath + '.js';
+		}
+
+		// The global requirejs.toUrl does not resolve relative module paths.
+		if (filePath.startsWith('./')) {
+			filePath = path.join(path.dirname(currentFilePath), filePath);
+		}
+
+		return path.normalize(requirejs.toUrl(filePath));
+	}
+
+	/**
 		 * Diverges the search to the given module
 		 * @param {String} currentFilePath Current file path to start search from
 		 * @param {String} modulePath Require path of the target module
@@ -134,20 +211,7 @@ class ReferenceProvider {
 		 * @returns {Promise} resolves with file location
 		 */
 	searchModule (currentFilePath, modulePath, searchFor, stopSearchingFurther) {
-		let newUriPath;
-
-		if ((modulePath.match(/^\./i))) {
-			newUriPath = path.resolve(currentFilePath, '../' + modulePath);
-		} else {
-			const rootModulePath = vscode.workspace.getConfiguration('requireModuleSupport').get('modulePath');
-
-			newUriPath = path.resolve(vscode.workspace.rootPath, rootModulePath, modulePath);
-		}
-		if (!newUriPath.match(/\.js$/i)) {
-			newUriPath += '.js';
-		}
-
-		const newUri = vscode.Uri.file(newUriPath);
+		const newUri = vscode.Uri.file(this.resolveModulePath(modulePath, currentFilePath));
 		const newDocument = vscode.workspace.openTextDocument(newUri);
 
 		return new Promise(resolve => {
@@ -455,6 +519,9 @@ Object.assign(exports, {
 	activate (context) {
 		const referenceProvider = new ReferenceProvider();
 
+		initializeRequireJs();
+		context.subscriptions.push(
+			vscode.workspace.onDidChangeConfiguration(initializeRequireJs));
 		context.subscriptions.push(
 			vscode.languages.registerDefinitionProvider(
 				'javascript', referenceProvider));
