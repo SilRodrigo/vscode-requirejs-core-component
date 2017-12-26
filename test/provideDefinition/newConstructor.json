@@ -1,0 +1,134 @@
+[
+	{
+		"name": "formal parameter \"a\"",
+		"source": {
+			"position": {
+				"line": 0,
+				"character": 50
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "formal parameter \"b\"",
+		"source": {
+			"position": {
+				"line": 0,
+				"character": 53
+			}
+		},
+		"target": {
+			"file": "moduleB.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "variable \"foo\"",
+		"source": {
+			"position": {
+				"line": 1,
+				"character": 8
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "class \"a\"",
+		"source": {
+			"position": {
+				"line": 1,
+				"character": 18
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "object \"foo\"",
+		"source": {
+			"position": {
+				"line": 2,
+				"character": 4
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "method \"bar\"",
+		"source": {
+			"position": {
+				"line": 2,
+				"character": 8
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 5,
+					"character": 8
+				},
+				"end": {
+					"line": 5,
+					"character": 11
+				}
+			}
+		}
+	}
+]

@@ -1,0 +1,222 @@
+[
+	{
+		"name": "formal parameter \"a\"",
+		"source": {
+			"position": {
+				"line": 0,
+				"character": 41
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "formal parameter \"b\"",
+		"source": {
+			"position": {
+				"line": 0,
+				"character": 44
+			}
+		},
+		"target": {
+			"file": "moduleB.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "variable \"foo\"",
+		"source": {
+			"position": {
+				"line": 1,
+				"character": 8
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "expression \"a\"",
+		"source": {
+			"position": {
+				"line": 1,
+				"character": 14
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "variable \"bar\"",
+		"source": {
+			"position": {
+				"line": 2,
+				"character": 8
+			}
+		},
+		"target": {
+			"file": "moduleB.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "expression \"b\"",
+		"source": {
+			"position": {
+				"line": 2,
+				"character": 14
+			}
+		},
+		"target": {
+			"file": "moduleB.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "object \"foo\"",
+		"source": {
+			"position": {
+				"line": 3,
+				"character": 4
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "object \"bar\"",
+		"source": {
+			"position": {
+				"line": 4,
+				"character": 4
+			}
+		},
+		"target": {
+			"file": "moduleB.js",
+			"range": {
+				"start": {
+					"line": 0,
+					"character": 0
+				},
+				"end": {
+					"line": 0,
+					"character": 0
+				}
+			}
+		}
+	},
+	{
+		"name": "method \"baz\"",
+		"source": {
+			"position": {
+				"line": 3,
+				"character": 8
+			}
+		},
+		"target": {
+			"file": "moduleA.js",
+			"range": {
+				"start": {
+					"line": 8,
+					"character": 8
+				},
+				"end": {
+					"line": 8,
+					"character": 11
+				}
+			}
+		}
+	},
+	{
+		"name": "property \"prop\"",
+		"source": {
+			"position": {
+				"line": 4,
+				"character": 8
+			}
+		},
+		"target": {
+			"file": "moduleB.js",
+			"range": {
+				"start": {
+					"line": 2,
+					"character": 8
+				},
+				"end": {
+					"line": 2,
+					"character": 12
+				}
+			}
+		}
+	}
+]
