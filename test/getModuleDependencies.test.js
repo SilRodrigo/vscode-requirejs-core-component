@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { DefinitionProvider } = require('../extension');
-const definitionProvider = new DefinitionProvider();
+const ModuleAnalyser = require('../src/moduleAnalyser');
+const moduleAnalyser = new ModuleAnalyser();
 
 suite('getModuleDependencies', () => {
 	test('should return object with module path and name', () => {
@@ -10,7 +10,7 @@ suite('getModuleDependencies', () => {
 			moduleB: './path/to/b'
 		};
 
-		assert.deepEqual(definitionProvider.getModuleDependencies({
+		assert.deepEqual(moduleAnalyser.getModuleDependencies({
 			fileName: '1',
 			version: 1
 		}, input), expected);
@@ -18,7 +18,7 @@ suite('getModuleDependencies', () => {
 
 	test('should return object with module path and name for multiline define', () => {
 		const input = `define([
-                'moduleA', 
+                'moduleA',
                 'moduleB'
             ], function(a, b) {});`;
 		const expected = {
@@ -26,7 +26,7 @@ suite('getModuleDependencies', () => {
 			b: 'moduleB'
 		};
 
-		assert.deepEqual(definitionProvider.getModuleDependencies({
+		assert.deepEqual(moduleAnalyser.getModuleDependencies({
 			fileName: '2',
 			version: 1
 		}, input), expected);
@@ -34,7 +34,7 @@ suite('getModuleDependencies', () => {
 
 	test('should return object with module path and name for multiline define', () => {
 		const input = `require([
-                'moduleA', 
+                'moduleA',
                 'moduleB'
             ], function(a, b) {});`;
 		const expected = {
@@ -42,7 +42,7 @@ suite('getModuleDependencies', () => {
 			b: 'moduleB'
 		};
 
-		assert.deepEqual(definitionProvider.getModuleDependencies({
+		assert.deepEqual(moduleAnalyser.getModuleDependencies({
 			fileName: '3',
 			version: 1
 		}, input), expected);
@@ -55,7 +55,7 @@ suite('getModuleDependencies', () => {
 			b: 'moduleB'
 		};
 
-		assert.deepEqual(definitionProvider.getModuleDependencies({
+		assert.deepEqual(moduleAnalyser.getModuleDependencies({
 			fileName: '4',
 			version: 1
 		}, input), expected);
