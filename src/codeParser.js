@@ -22,8 +22,8 @@ function parse (contents, options) {
 
 /**
 	 * Finds the first occurrence of the specified identifier.
-	 * @param {Object} astRoot Parsed document
-	 * @param {String} identifier Identifier to look for
+	 * @param {Object} astRoot Parsed document.
+	 * @param {String} identifier Identifier to look for.
 	 *
 	 * @returns {Object} Range, where the identifer was found as
 	 * {start,end} object with {line,column} sub-objects.
@@ -47,12 +47,12 @@ function findIdentifier (astRoot, identifier) {
 /**
 	 * Returns AST nodes for the identifier the expression around it, or nothing,
 	 * if there is no identifier within the specified range.
-	 * @param {Object} astRoot Parsed document
-	 * @param {Object} range Range, where the identifier is supposed to be
-	 * @returns {Object} Contains currentNode and parentNode objects
+	 * @param {Object} astRoot Parsed document.
+	 * @param {Object} range Range, where the identifier is supposed to be.
+	 * @returns {Object} Contains currentNode and parentNode objects.
 	 */
 function findIdentifierWithinRange (astRoot, range) {
-	// vscode.Range is zero-based, esprima's one-based
+	// vscode.Range is zero-based, esprima's range is one-based
 	const line = range.start.line + 1;
 	const column = range.start.character;
 	let currentNode, parentNode;
@@ -91,9 +91,9 @@ function findIdentifierWithinRange (astRoot, range) {
 	 * Returns map of local variables and their initializing ones from expressions,
 	 * which just assign one identifier to another, or assign a variable a value
 	 * by a "new" expression.
-	 * @param {Object} astRoot Parsed document
-	 * @param {Object} stopNode Node, which the declarations have to preceede
-	 * @returns {Object} Contains currentNode and parentNode objects
+	 * @param {Object} astRoot Parsed document.
+	 * @param {Object} stopNode Node, which the declarations have to precede.
+	 * @returns {Object} A map "variable identifier" -> "dependency identifier".
 	 */
 function getVariableAssignments (astRoot, stopNode) {
 	const assignments = {};
@@ -101,10 +101,10 @@ function getVariableAssignments (astRoot, stopNode) {
 	function handleAssignment (leftNodeName, rightNode) {
 		if (rightNode) {
 			if (rightNode.type === 'Identifier') {
-				// Suport assignment "... = imported;"
+				// Support assignment "... = imported;"
 				assignments[leftNodeName] = rightNode.name;
 			} else if (rightNode.type === 'NewExpression') {
-				// Suport assignment "... = new Imported;"
+				// Support assignment "... = new Imported;"
 				let callee = rightNode.callee;
 
 				if (callee && callee.type === 'Identifier') {
@@ -121,12 +121,12 @@ function getVariableAssignments (astRoot, stopNode) {
 
 		if (node) {
 			if (node.type === 'VariableDeclarator') {
-				// Suport declaration "var local = imported;"
+				// Support declaration "var local = imported;"
 				if (node.id && node.id.type === 'Identifier' && node.init) {
 					handleAssignment(node.id.name, node.init);
 				}
 			} else if (node.type === 'AssignmentExpression') {
-				// Suport assignment "local = imported;"
+				// Support assignment "local = imported;"
 				if (node.left && node.left.type === 'Identifier' && node.right) {
 					handleAssignment(node.left.name, node.right);
 				}
@@ -146,15 +146,17 @@ function getVariableAssignments (astRoot, stopNode) {
 	 * @param {Object} astRoot Parsed document
 	 * @param {Object} identifier AST nodes for the selected identifier
 	 * @param {Object} moduleDependencies Map of formal parameter name to RequireJS module name
-	 * @returns {Object} Contains currentNode and parentNode objects
+	 * @returns {Object} Dependency as {modulePath, selected}, where modulePath
+	 * is unparsed RequireJS module path and selected the identifier to look
+	 * for in the dependent module.
 	 */
 function findOriginatingModuleDependency (astRoot, identifier, moduleDependencies) {
 	const parentNode = identifier.parentNode;
 	const currentNode = identifier.currentNode;
 	let selected = currentNode.name;
-	let imported, isMember;
+	let imported, isMember, modulePath;
 
-	if (parentNode) {
+	function getModuleDependencyFromExpression () {
 		let property = parentNode.property;
 		let object = parentNode.object;
 
@@ -184,17 +186,11 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 				}
 			}
 		}
-	}
-	if (!imported) {
-		imported = selected;
+
+		return undefined;
 	}
 
-	// Exported identifiers usually equal to formal parameters used for importing.
-	let modulePath = moduleDependencies[imported];
-
-	// If the identifier is missing among the formal parameters, it may be declared
-	// locally and assigned the imported dependency.
-	if (!modulePath) {
+	function getModuleDependencyFromVariables () {
 		const assignments = getVariableAssignments(astRoot, currentNode);
 
 		for (;;) {
@@ -218,6 +214,24 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 				break;
 			}
 		}
+	}
+
+	// Start by analyzing the expression; either a direct function call or
+	// a dereferenced member call.
+	if (parentNode) {
+		getModuleDependencyFromExpression();
+	}
+
+	// Exported identifiers usually equal to formal parameters used for importing.
+	if (!imported) {
+		imported = selected;
+	}
+	modulePath = moduleDependencies[imported];
+
+	// If the identifier is missing among the formal parameters, it may be
+	// declared locally and assigned the imported dependency.
+	if (!modulePath) {
+		getModuleDependencyFromVariables();
 	}
 
 	return {
