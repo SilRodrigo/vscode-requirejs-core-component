@@ -1,7 +1,7 @@
 const { normalize } = require('path');
 const rootPath = __dirname.replace('test', '').replace(/\\/g, '/');
 const assert = require('assert');
-const { DefinitionProvider } = require('../extension');
+const DefinitionProvider = require('../src/definitionProvider');
 const definitionProvider = new DefinitionProvider();
 
 suite('searchModule', () => {

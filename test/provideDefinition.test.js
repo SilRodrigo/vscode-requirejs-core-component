@@ -5,7 +5,7 @@ const vscode = require('vscode');
 const workspace = vscode.workspace;
 const rootPath = workspace.rootPath;
 const { initializeRequireJs } = require('../src/moduleResolver');
-const { DefinitionProvider } = require('../extension');
+const DefinitionProvider = require('../src/definitionProvider');
 const definitionProvider = new DefinitionProvider();
 
 const globalRequire = require;

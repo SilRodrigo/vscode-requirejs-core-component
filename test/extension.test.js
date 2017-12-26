@@ -1,6 +1,7 @@
 const sinon = require('sinon');
 const proxyquire = require('proxyquire');
 const assert = require('assert');
+const DefinitionProvider = require('../src/definitionProvider');
 const registerDefinitionProviderStub = sinon.stub();
 const vscodeStub = { languages: { registerDefinitionProvider: registerDefinitionProviderStub } };
 const extension = proxyquire('../extension', { vscode: vscodeStub });
@@ -21,10 +22,7 @@ suite('extension', () => {
 		assert.equal(context.subscriptions.length, 3);
 		assert.deepEqual(
 			registerDefinitionProviderStub.getCall(0).args,
-			[
-				'javascript',
-				new extension.DefinitionProvider()
-			]
+			['javascript', new DefinitionProvider()]
 		);
 	});
 });
