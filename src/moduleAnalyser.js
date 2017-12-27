@@ -1,65 +1,19 @@
 const vscode = require('vscode');
+const workspace = vscode.workspace;
 const amodroParse = require('amodro-trace/parse');
 const codeParser = require('./codeParser');
-const LRU = require('lru-cache');
-
-/**
-	 * Gets a cached object for the specified document version. If the cache was populated
-	 * for other document version, it removes the object from the cache and returns nothing.
-	 * @param {Object} cache LRU cache to use
-	 * @param {TextDocument} document Original document
-	 * @returns {Object} The cached object or null
-	 */
-function getCachedObject (cache, document) {
-	const fileName = document.fileName;
-	let cacheEntry = cache.get(fileName);
-
-	if (cacheEntry) {
-		// The version property changes with every document modification.
-		if (cacheEntry.version !== document.version) {
-			cache.del(fileName);
-		} else {
-			return cacheEntry.object;
-		}
-	}
-
-	return null;
-}
-
-/**
-	 * Sets a object to cache for the specified document version.
-	 * @param {Object} cache LRU cache to use
-	 * @param {TextDocument} document Original document
-	 * @param {Object} object Object to store to the cache
-	 * @returns {void} Nothing
-	 */
-function setCachedObject (cache, document, object) {
-	cache.set(document.fileName, {
-		object: object,
-		version: document.version
-	});
-}
+const CacheByDocument = require('./cacheByDocument');
+const { addDisposable, disposeAll } = require('./disposableHost');
 
 class ModuleAnalyser {
 	/**
 		 * Initializes a new instance.
 		 */
 	constructor () {
-		const moduleCacheSize = vscode.workspace
-			.getConfiguration('requireModuleSupport')
-			.get('moduleCacheSize') || 100;
-
-		this.moduleDependencyCache = new LRU(moduleCacheSize);
-		this.parsedModuleCache = new LRU(moduleCacheSize);
-	}
-
-	/**
-		 * Clears internal caches to get to the state of the new instance.
-		 * @returns {Void} Nothing
-		 */
-	clearObjectCaches () {
-		this.moduleDependencyCache.reset();
-		this.parsedModuleCache.reset();
+		this.moduleDependencyCache = new CacheByDocument();
+		addDisposable(this.moduleDependencyCache);
+		this.parsedModuleCache = new CacheByDocument();
+		addDisposable(this.parsedModuleCache);
 	}
 
 	/**
@@ -68,11 +22,11 @@ class ModuleAnalyser {
 		 * @returns {Object} JavaScript AST
 		 */
 	getParsedModule (document) {
-		let astRoot = getCachedObject(this.parsedModuleCache, document);
+		let astRoot = this.parsedModuleCache.getCachedObject(document);
 
 		if (!astRoot) {
 			astRoot = codeParser.parse(document.getText(), { loc: true });
-			setCachedObject(this.parsedModuleCache, document, astRoot);
+			this.parsedModuleCache.setCachedObject(document, astRoot);
 		}
 
 		return astRoot;
@@ -85,10 +39,10 @@ class ModuleAnalyser {
 		 * @returns {Object} Contains name/path pairs
 		 */
 	getModuleDependencies (document, astRoot) {
-		let dependencies = getCachedObject(this.moduleDependencyCache, document);
+		let dependencies = this.moduleDependencyCache.getCachedObject(document);
 
 		if (!dependencies) {
-			const enableCjsModules = vscode.workspace
+			const enableCjsModules = workspace
 				.getConfiguration('requireModuleSupport')
 				.get('enableCjsModules');
 			const findDependencies = enableCjsModules ? amodroParse.findCjsDependencies
@@ -102,10 +56,42 @@ class ModuleAnalyser {
 
 				return result;
 			}, {});
-			setCachedObject(this.moduleDependencyCache, document, dependencies);
+			this.moduleDependencyCache.setCachedObject(document, dependencies);
 		}
 
 		return dependencies;
+	}
+
+	/**
+		 * Returns information about the originating module of the currently
+		 * selected identifier.
+		 * @param {TextDocument} document The document in which the command was invoked.
+		 * @param {Position} position The position at which the command was invoked.
+		 * @returns {Object} Object with `{modulePath, imported, selected}`,
+		 * where `modulePath` is the RequireJS path of the originating module,
+		 * `imported` the formal parameter name with the module exports and
+		 * `selected` the currently selected identifier.
+		 */
+	getOriginatingModuleDependency (document, position) {
+		const range = document.getWordRangeAtPosition(position);
+
+		if (range) {
+			const astRoot = this.getParsedModule(document);
+			const identifier = codeParser.findIdentifierWithinRange(astRoot, range);
+
+			if (identifier) {
+				const moduleDependencies = this.getModuleDependencies(document, astRoot);
+
+				return codeParser.findOriginatingModuleDependency(
+					astRoot, identifier, moduleDependencies);
+			}
+		}
+
+		return undefined;
+	}
+
+	dispose () {
+		disposeAll(this);
 	}
 }
 

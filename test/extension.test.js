@@ -1,9 +1,22 @@
 const sinon = require('sinon');
 const proxyquire = require('proxyquire');
 const assert = require('assert');
+const StatusNotifier = require('../src/statusNotifier');
+const ModuleResolver = require('../src/moduleResolver');
+const ModuleFinder = require('../src/moduleFinder');
+const ModuleAnalyser = require('../src/moduleAnalyser');
 const DefinitionProvider = require('../src/definitionProvider');
+const ReferenceProvider = require('../src/referenceProvider');
 const registerDefinitionProviderStub = sinon.stub();
-const vscodeStub = { languages: { registerDefinitionProvider: registerDefinitionProviderStub } };
+const registerReferenceProviderStub = sinon.stub();
+const registerTextEditorCommandStub = sinon.stub();
+const vscodeStub = {
+	languages: {
+		registerDefinitionProvider: registerDefinitionProviderStub,
+		registerReferenceProvider: registerReferenceProviderStub
+	},
+	commands: { registerTextEditorCommand: registerTextEditorCommandStub }
+};
 const extension = proxyquire('../extension', { vscode: vscodeStub });
 
 suite('extension', () => {
@@ -11,18 +24,46 @@ suite('extension', () => {
 		assert.ok('activate' in extension);
 	});
 
-	test('activate should register definition provider', () => {
-		const context = { subscriptions: [] };
+	test('activate should register expected objects', () => {
+		const subscriptions = [];
+		const context = { subscriptions: subscriptions };
 
 		extension.activate(context);
 
 		// Registering the RequireJS definition provider,
-		// adding the "Go To Definition Module" command and
-		// reinitializing RequireJS on configuration change.
-		assert.equal(context.subscriptions.length, 3);
-		assert.deepEqual(
-			registerDefinitionProviderStub.getCall(0).args,
-			['javascript', new DefinitionProvider()]
-		);
+		// registering the RequireJS reference provider,
+		// adding the "Go To Definition Module" command,
+		// reinitializing RequireJS on configuration change and four
+		// objects (moduleResolver, moduleAnalyser, definitionProvider
+		// and referenceProvider).
+		assert.equal(subscriptions.length, 9);
+		assert.ok(subscriptions[0] instanceof StatusNotifier);
+		assert.ok(subscriptions[1] instanceof ModuleResolver);
+		assert.ok(subscriptions[2] instanceof ModuleFinder);
+		assert.ok(subscriptions[3] instanceof ModuleAnalyser);
+		assert.ok(subscriptions[4] instanceof DefinitionProvider);
+		assert.ok(subscriptions[5] instanceof ReferenceProvider);
+
+		const definitionProviderArgs = registerDefinitionProviderStub.getCall(0).args;
+
+		assert.ok(Array.isArray(definitionProviderArgs));
+		assert.equal(definitionProviderArgs.length, 2);
+		assert.equal(definitionProviderArgs[0], 'javascript');
+		assert.ok(definitionProviderArgs[1] instanceof DefinitionProvider);
+
+		const referenceProviderArgs = registerReferenceProviderStub.getCall(0).args;
+
+		assert.ok(Array.isArray(referenceProviderArgs));
+		assert.equal(referenceProviderArgs.length, 2);
+		assert.equal(referenceProviderArgs[0], 'javascript');
+		assert.ok(referenceProviderArgs[1] instanceof ReferenceProvider);
+
+		const goToDefinitionModuleArgs = registerTextEditorCommandStub.getCall(0).args;
+
+		assert.ok(Array.isArray(goToDefinitionModuleArgs));
+		assert.equal(goToDefinitionModuleArgs.length, 2);
+		assert.equal(goToDefinitionModuleArgs[0], 'requireModuleSupport.goToDefinitionModule');
+		assert.equal(typeof goToDefinitionModuleArgs[1], 'function');
+		assert.equal(goToDefinitionModuleArgs[1].name, 'bound goToDefinitionModule');
 	});
 });

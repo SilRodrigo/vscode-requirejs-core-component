@@ -1,14 +1,19 @@
 const vscode = require('vscode');
+const workspace = vscode.workspace;
 const codeParser = require('./codeParser');
+const ModuleResolver = require('./moduleResolver');
 const ModuleAnalyser = require('./moduleAnalyser');
-const moduleResolver = require('./moduleResolver');
+const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
 
 class DefinitionProvider {
 	/**
 		 * Initializes a new instance.
+		 * @param {ModuleResolver} moduleResolver Module to file path resolution helper.
+		 * @param {ModuleAnalyser} moduleAnalyser Caching module analysis helper.
 		 */
-	constructor () {
-		this.moduleAnalyser = new ModuleAnalyser();
+	constructor (moduleResolver, moduleAnalyser) {
+		hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver);
+		hostOrCreateDisposable(this, 'moduleAnalyser', ModuleAnalyser, moduleAnalyser);
 	}
 
 	/**
@@ -19,12 +24,12 @@ class DefinitionProvider {
 		 * @returns {Promise} Resolves with a file location
 		 */
 	searchModule (currentFilePath, modulePath, searchFor) {
-		const filePath = moduleResolver.resolveModulePath(modulePath, currentFilePath);
+		const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath);
 		const newUri = vscode.Uri.file(filePath);
-		const newDocument = vscode.workspace.openTextDocument(newUri);
+		const newDocument = workspace.openTextDocument(newUri);
 
 		return newDocument.then(document => {
-			const onlyNavigateToFile = vscode.workspace
+			const onlyNavigateToFile = workspace
 				.getConfiguration('requireModuleSupport')
 				.get('onlyNavigateToFile');
 
@@ -46,27 +51,28 @@ class DefinitionProvider {
 		});
 	}
 
+	/**
+		 * Provide the definition of the symbol at the given position and document.
+		 * @param {TextDocument} document The document in which the command was invoked.
+		 * @param {Position} position The position at which the command was invoked.
+		 * @returns {Promise} Resolves with a file location.
+		 */
 	provideDefinition (document, position) {
-		const currentFilePath = document.fileName;
-		const range = document.getWordRangeAtPosition(position);
+		const moduleDependency = this.moduleAnalyser.getOriginatingModuleDependency(document, position);
 
-		if (range) {
-			const astRoot = this.moduleAnalyser.getParsedModule(document);
-			const identifier = codeParser.findIdentifierWithinRange(astRoot, range);
+		if (moduleDependency) {
+			const modulePath = moduleDependency.modulePath;
 
-			if (identifier) {
-				const moduleDependencies = this.moduleAnalyser.getModuleDependencies(document, astRoot);
-				const moduleDependency = codeParser.findOriginatingModuleDependency(
-					astRoot, identifier, moduleDependencies);
-				const modulePath = moduleDependency.modulePath;
-
-				if (modulePath) {
-					return this.searchModule(currentFilePath, modulePath, moduleDependency.selected);
-				}
+			if (modulePath) {
+				return this.searchModule(document.fileName, modulePath, moduleDependency.selected);
 			}
 		}
 
 		return Promise.resolve(undefined);
+	}
+
+	dispose () {
+		disposeAll(this);
 	}
 }
 

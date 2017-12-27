@@ -21,6 +21,30 @@ function parse (contents, options) {
 }
 
 /**
+	 * Finds all occurrences of the specified identifier.
+	 * @param {Object} astRoot Parsed document.
+	 * @param {String} identifier Identifier to look for.
+	 *
+	 * @returns {Array} Ranges, where the identifer was found as
+	 * {start,end} objects with {line,column} sub-objects.
+	 */
+function findAllIdentifiers (astRoot, identifier) {
+	const locations = [];
+
+	amodroParse.traverse(astRoot, node => {
+		if (node && node.type === 'Identifier' && node.name === identifier) {
+			const loc = node.loc;
+
+			if (loc) {
+				locations.push(loc);
+			}
+		}
+	});
+
+	return locations;
+}
+
+/**
 	 * Finds the first occurrence of the specified identifier.
 	 * @param {Object} astRoot Parsed document.
 	 * @param {String} identifier Identifier to look for.
@@ -242,6 +266,7 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 }
 
 module.exports = {
+	findAllIdentifiers: findAllIdentifiers,
 	findIdentifier: findIdentifier,
 	findIdentifierWithinRange: findIdentifierWithinRange,
 	findOriginatingModuleDependency: findOriginatingModuleDependency,

@@ -4,7 +4,6 @@ const { join, parse } = require('path');
 const vscode = require('vscode');
 const workspace = vscode.workspace;
 const rootPath = workspace.rootPath;
-const { initializeRequireJs } = require('../src/moduleResolver');
 const DefinitionProvider = require('../src/definitionProvider');
 const definitionProvider = new DefinitionProvider();
 
@@ -25,8 +24,6 @@ const suites = fs.readdirSync(join(rootPath, '../test/provideDefinition'))
 			})
 		};
 	});
-
-initializeRequireJs();
 
 function openDocumentAtLocation (location) {
 	return workspace.openTextDocument(location.uri);

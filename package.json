@@ -36,6 +36,16 @@
 					"default": 100,
 					"description": "Maximum count of parsed modules and their dependencies kept in memory as cache to improve performance"
 				},
+				"requireModuleSupport.includeModulePattern": {
+					"type": "string",
+					"default": "**/*.js",
+					"description": "File globbing pattern to find JavaScript modules in this project"
+				},
+				"requireModuleSupport.excludeModulePattern": {
+					"type": "string",
+					"default": "",
+					"description": "File globbing pattern to exclude when looking for JavaScript modules in this project"
+				},
 				"requireModuleSupport.modulePath": {
 					"type": "string",
 					"default": "",
@@ -50,6 +60,11 @@
 					"type": "object",
 					"default": {},
 					"description": "Assigns default file extensions to target module paths used with RequireJS plugins"
+				},
+				"requireModuleSupport.moduleProcessingBatchSize": {
+					"type": "number",
+					"default": 30,
+					"description": "How many documents should be opened and searched before cancelling of the operation is possible"
 				}
 			}
 		},
