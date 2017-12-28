@@ -129,7 +129,7 @@ class FolderCrawler {
 					return outputItems;
 				}
 
-				// Process the rest of items after curring the batch above.
+				// Process the rest of items after cutting the batch above.
 				return this.inspectFileItems(items, cancellationToken, outputItems);
 			});
 	}

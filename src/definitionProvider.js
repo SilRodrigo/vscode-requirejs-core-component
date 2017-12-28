@@ -1,6 +1,5 @@
-const vscode = require('vscode');
-const workspace = vscode.workspace;
-const codeParser = require('./codeParser');
+const { workspace, Uri, Location, Range, Position } = require('vscode');
+const { findIdentifier } = require('./codeParser');
 const ModuleResolver = require('./moduleResolver');
 const ModuleAnalyser = require('./moduleAnalyser');
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
@@ -25,7 +24,7 @@ class DefinitionProvider {
 		 */
 	searchModule (currentFilePath, modulePath, searchFor) {
 		const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath);
-		const newUri = vscode.Uri.file(filePath);
+		const newUri = Uri.file(filePath);
 		const newDocument = workspace.openTextDocument(newUri);
 
 		return newDocument.then(document => {
@@ -36,18 +35,18 @@ class DefinitionProvider {
 			// Some modules are source for RequireJS plugins and need not be written in JavaScript.
 			if (!onlyNavigateToFile && searchFor && document.languageId === 'javascript') {
 				const astRoot = this.moduleAnalyser.getParsedModule(document);
-				const range = codeParser.findIdentifier(astRoot, searchFor);
+				const range = findIdentifier(astRoot, searchFor);
 
 				if (range) {
-					return new vscode.Location(newUri, new vscode.Range(
-						// vscode.Range is zero-based, esprima is one-based
-						new vscode.Position(range.start.line - 1, range.start.column),
-						new vscode.Position(range.end.line - 1, range.end.column)
+					return new Location(newUri, new Range(
+						// Range is zero-based, esprima is one-based
+						new Position(range.start.line - 1, range.start.column),
+						new Position(range.end.line - 1, range.end.column)
 					));
 				}
 			}
 
-			return new vscode.Location(newUri, new vscode.Position(0, 0));
+			return new Location(newUri, new Position(0, 0));
 		});
 	}
 
@@ -60,6 +59,9 @@ class DefinitionProvider {
 	provideDefinition (document, position) {
 		const moduleDependency = this.moduleAnalyser.getOriginatingModuleDependency(document, position);
 
+		// If the selected identifier cannot be tracked to other module,
+		// let the built-in definition lookup handle it. The symbol definition
+		// can be found, only if its originating module could be found.
 		if (moduleDependency) {
 			const modulePath = moduleDependency.modulePath;
 
@@ -71,6 +73,10 @@ class DefinitionProvider {
 		return Promise.resolve(undefined);
 	}
 
+	/**
+		 * Disposes of disposable child objects.
+		 * @returns {Void} Nothing.
+		 */
 	dispose () {
 		disposeAll(this);
 	}

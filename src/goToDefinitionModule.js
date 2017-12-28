@@ -1,4 +1,4 @@
-const vscode = require('vscode');
+const { workspace, window, commands, Selection } = require('vscode');
 
 /**
 	 * Opens the specified document in an editor window and selects
@@ -7,12 +7,12 @@ const vscode = require('vscode');
 	 * @returns {Promise} Operation finish
 	 */
 function openDocumentAtLocation (location) {
-	return vscode.workspace.openTextDocument(location.uri)
-		.then(vscode.window.showTextDocument)
+	return workspace.openTextDocument(location.uri)
+		.then(window.showTextDocument)
 		.then(editor => {
 			const range = location.range;
 
-			editor.selection = new vscode.Selection(range.end, range.start);
+			editor.selection = new Selection(range.end, range.start);
 			editor.revealRange(range);
 		});
 }
@@ -26,7 +26,7 @@ function openDocumentAtLocation (location) {
 function goToDefinitionModule (referenceProvider, editor) {
 	// Default to "Go to Definition" for non-JavaScript files.
 	if (editor.document.languageId !== 'javascript') {
-		return vscode.commands.executeCommand('editor.action.goToDeclaration');
+		return commands.executeCommand('editor.action.goToDeclaration');
 	}
 
 	return referenceProvider.provideDefinition(editor.document, editor.selection.active)
@@ -40,7 +40,7 @@ function goToDefinitionModule (referenceProvider, editor) {
 			}
 
 			// Default to "Go to Definition", if this provider did not find anything.
-			return vscode.commands.executeCommand('editor.action.goToDeclaration');
+			return commands.executeCommand('editor.action.goToDeclaration');
 		});
 }
 

@@ -1,5 +1,4 @@
-const vscode = require('vscode');
-const workspace = vscode.workspace;
+const { workspace } = require('vscode');
 const LRU = require('lru-cache');
 const { addDisposable, disposeAll } = require('./disposableHost');
 
@@ -12,6 +11,10 @@ class CacheByDocument {
 		addDisposable(workspace.onDidChangeConfiguration(() => this.configure()));
 	}
 
+	/**
+		 * Initializes or re-initializes the LRU cache object.
+		 * @returns {void} Nothing.
+		 */
 	configure () {
 		const moduleCacheSize = workspace
 			.getConfiguration('requireModuleSupport')
@@ -50,7 +53,7 @@ class CacheByDocument {
 		 * Sets a object to cache for the specified document version.
 		 * @param {TextDocument} document Original document
 		 * @param {Object} object Object to store to the cache
-		 * @returns {void} Nothing
+		 * @returns {void} Nothing.
 		 */
 	setCachedObject (document, object) {
 		this.cache.set(document.fileName, {
@@ -59,6 +62,10 @@ class CacheByDocument {
 		});
 	}
 
+	/**
+		 * Disposes of disposable child objects.
+		 * @returns {Void} Nothing.
+		 */
 	dispose () {
 		disposeAll(this);
 	}

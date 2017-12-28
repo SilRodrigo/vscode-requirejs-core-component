@@ -2,7 +2,7 @@ const { CompletionItem, CompletionItemKind, workspace } = require('vscode');
 const CompletionItemFileKind = CompletionItemKind.File;
 const ModuleResolver = require('./moduleResolver');
 const FolderCrawler = require('./folderCrawler');
-const modulePath = require('./modulePath');
+const {	isInsideString, startsLikeModulePath, getModulePathUpToPosition } = require('./modulePath');
 const { basename, extname } = require('path');
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
 
@@ -71,7 +71,7 @@ class CompletionItemProvider {
 		const currentLine = document.getText(document.lineAt(position).range);
 		const currentCharacter = position.character;
 
-		if (!modulePath.isInsideString(currentLine, currentCharacter)) {
+		if (!isInsideString(currentLine, currentCharacter)) {
 			return Promise.resolve([]);
 		}
 
@@ -113,14 +113,14 @@ class CompletionItemProvider {
 		 * @returns {String} The file-system path or `undefined`, if the string cannot be interpreted as a module path.
 		 */
 	getFocusedFolderPath (currentFilePath, currentLine, currentPosition) {
-		let userPath = modulePath.getModulePathUpToPosition(currentLine, currentPosition);
+		let userPath = getModulePathUpToPosition(currentLine, currentPosition);
 		const pluginSeparator = userPath.indexOf('!');
 
 		// Do not let the plugin add the plugin-specific file extension.
 		if (pluginSeparator > 0) {
 			userPath = userPath.substr(pluginSeparator + 1);
 		}
-		if (!modulePath.startsLikeModulePath(userPath)) {
+		if (!startsLikeModulePath(userPath)) {
 			return undefined;
 		}
 

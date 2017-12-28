@@ -1,6 +1,6 @@
 const { Hover } = require('vscode');
 const ModuleResolver = require('./moduleResolver');
-const modulePath = require('./modulePath');
+const {	isInsideString, startsLikeModulePath, getSurroundingModulePath } = require('./modulePath');
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
 
 class HoverProvider {
@@ -23,7 +23,7 @@ class HoverProvider {
 		const currentLine = document.getText(document.lineAt(position).range);
 		const currentCharacter = position.character;
 
-		if (!modulePath.isInsideString(currentLine, currentCharacter)) {
+		if (!isInsideString(currentLine, currentCharacter)) {
 			return undefined;
 		}
 
@@ -41,9 +41,9 @@ class HoverProvider {
 		 * @returns {String} The file-system path or `undefined`, if the string cannot be interpreted as a module path.
 		 */
 	getFocusedFilePath (currentFilePath, currentLine, currentPosition) {
-		const userPath = modulePath.getSurroundingModulePath(currentLine, currentPosition);
+		const userPath = getSurroundingModulePath(currentLine, currentPosition);
 
-		return modulePath.startsLikeModulePath(userPath)
+		return startsLikeModulePath(userPath)
 			&& this.moduleResolver.resolveModulePath(userPath, currentFilePath);
 	}
 

@@ -1,5 +1,5 @@
-const amodroParse = require('amodro-trace/parse');
-const esprima = require('esprima');
+const { traverse } = require('amodro-trace/parse');
+const { parse } = require('esprima');
 
 /**
 	 * Parses the input JavaScript text and returns a AST of it. Expects a
@@ -11,10 +11,10 @@ const esprima = require('esprima');
 	 * `range` and `loc` properties are recognized.
 	 * @returns {Object} Parsed AST root.
 	 */
-function parse (contents, options) {
+function parseModule (contents, options) {
 	const localOptions = options || {};
 
-	return esprima.parse(contents, {
+	return parse(contents, {
 		range: localOptions.range,
 		loc: localOptions.loc
 	});
@@ -31,7 +31,7 @@ function parse (contents, options) {
 function findAllIdentifiers (astRoot, identifier) {
 	const locations = [];
 
-	amodroParse.traverse(astRoot, node => {
+	traverse(astRoot, node => {
 		if (node && node.type === 'Identifier' && node.name === identifier) {
 			const loc = node.loc;
 
@@ -55,7 +55,7 @@ function findAllIdentifiers (astRoot, identifier) {
 function findIdentifier (astRoot, identifier) {
 	let loc;
 
-	amodroParse.traverse(astRoot, node => {
+	traverse(astRoot, node => {
 		if (node && node.type === 'Identifier' && node.name === identifier) {
 			loc = node.loc;
 
@@ -81,7 +81,7 @@ function findIdentifierWithinRange (astRoot, range) {
 	const column = range.start.character;
 	let currentNode, parentNode;
 
-	amodroParse.traverse(astRoot, function (node, parent) {
+	traverse(astRoot, function (node, parent) {
 		if (node) {
 			let loc = node.loc;
 
@@ -138,7 +138,7 @@ function getVariableAssignments (astRoot, stopNode) {
 		}
 	}
 
-	amodroParse.traverse(astRoot, function (node) {
+	traverse(astRoot, function (node) {
 		if (node === stopNode) {
 			return false;
 		}
@@ -240,7 +240,7 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 		}
 	}
 
-	// Start by analyzing the expression; either a direct function call or
+	// Start by analysing the expression; either a direct function call or
 	// a dereferenced member call.
 	if (parentNode) {
 		getModuleDependencyFromExpression();
@@ -270,5 +270,5 @@ module.exports = {
 	findIdentifier: findIdentifier,
 	findIdentifierWithinRange: findIdentifierWithinRange,
 	findOriginatingModuleDependency: findOriginatingModuleDependency,
-	parse: parse
+	parseModule: parseModule
 };

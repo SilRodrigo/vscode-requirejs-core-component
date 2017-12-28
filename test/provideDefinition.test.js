@@ -1,14 +1,13 @@
 const assert = require('assert');
-const fs = require('fs');
+const { readdirSync } = require('fs');
 const { join, parse } = require('path');
-const vscode = require('vscode');
-const workspace = vscode.workspace;
+const { workspace, Location, Position } = require('vscode');
 const rootPath = workspace.rootPath;
 const DefinitionProvider = require('../src/definitionProvider');
 const definitionProvider = new DefinitionProvider();
 
 const globalRequire = require;
-const suites = fs.readdirSync(join(rootPath, '../test/provideDefinition'))
+const suites = readdirSync(join(rootPath, '../test/provideDefinition'))
 	.map(file => {
 		const suite = parse(file);
 		const name = suite.name;
@@ -31,7 +30,7 @@ function openDocumentAtLocation (location) {
 
 function provideDefinitionAtPosition (document, position) {
 	return definitionProvider.provideDefinition(document,
-		new vscode.Position(position.line, position.character));
+		new Position(position.line, position.character));
 }
 
 function checkDefinitionAtLocation (expectedLocation, actualLocation) {
@@ -65,7 +64,7 @@ function createSpec (spec) {
 	test(spec.name, () => {
 		const source = spec.source;
 
-		return openDocumentAtLocation(new vscode.Location(join(rootPath, source.file)))
+		return openDocumentAtLocation(new Location(join(rootPath, source.file)))
 			.then(document => provideDefinitionAtPosition(document, source.position))
 			.then(location => checkDefinitionAtLocation(spec.target, location));
 	});

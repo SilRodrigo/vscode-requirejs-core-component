@@ -16,7 +16,7 @@ class ModuleResolver {
 
 	/**
 		 * Initializes or re-initializes requirejs for the activated context.
-		 * @returns {void} Nothing
+		 * @returns {void} Nothing.
 		 */
 	configure () {
 		const requireModuleSupport = workspace.getConfiguration('requireModuleSupport');
@@ -93,6 +93,10 @@ class ModuleResolver {
 		return normalize(requirejs.toUrl(filePath));
 	}
 
+	/**
+		 * Disposes of disposable child objects.
+		 * @returns {Void} Nothing.
+		 */
 	dispose () {
 		disposeAll(this);
 	}

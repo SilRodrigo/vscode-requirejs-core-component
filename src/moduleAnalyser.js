@@ -1,7 +1,6 @@
-const vscode = require('vscode');
-const workspace = vscode.workspace;
-const amodroParse = require('amodro-trace/parse');
-const codeParser = require('./codeParser');
+const { workspace } = require('vscode');
+const { findDependencies, findCjsDependencies } = require('amodro-trace/parse');
+const { parseModule, findIdentifierWithinRange, findOriginatingModuleDependency } = require('./codeParser');
 const CacheByDocument = require('./cacheByDocument');
 const { addDisposable, disposeAll } = require('./disposableHost');
 
@@ -25,7 +24,7 @@ class ModuleAnalyser {
 		let astRoot = this.parsedModuleCache.getCachedObject(document);
 
 		if (!astRoot) {
-			astRoot = codeParser.parse(document.getText(), { loc: true });
+			astRoot = parseModule(document.getText(), { loc: true });
 			this.parsedModuleCache.setCachedObject(document, astRoot);
 		}
 
@@ -42,15 +41,18 @@ class ModuleAnalyser {
 		let dependencies = this.moduleDependencyCache.getCachedObject(document);
 
 		if (!dependencies) {
+			// Pure CommonJS syntax needs a different lookup method.
 			const enableCjsModules = workspace
 				.getConfiguration('requireModuleSupport')
 				.get('enableCjsModules');
-			const findDependencies = enableCjsModules ? amodroParse.findCjsDependencies
-				: amodroParse.findDependencies;
+			const findModuleDependencies = enableCjsModules
+				? findCjsDependencies : findDependencies;
 
-			dependencies = findDependencies(astRoot);
-			let modules = dependencies.modules;
+			dependencies = findModuleDependencies(astRoot);
+			const modules = dependencies.modules;
 
+			// Create a map {formal parameter -> module path} from
+			// the two arrays with keys and vales.
 			dependencies = dependencies.params.reduce(function (result, param, index) {
 				result[param] = modules[index];
 
@@ -64,7 +66,8 @@ class ModuleAnalyser {
 
 	/**
 		 * Returns information about the originating module of the currently
-		 * selected identifier.
+		 * selected identifier, if it can ce tracked to a module, which the
+		 * current module depends on.
 		 * @param {TextDocument} document The document in which the command was invoked.
 		 * @param {Position} position The position at which the command was invoked.
 		 * @returns {Object} Object with `{modulePath, imported, selected}`,
@@ -77,19 +80,21 @@ class ModuleAnalyser {
 
 		if (range) {
 			const astRoot = this.getParsedModule(document);
-			const identifier = codeParser.findIdentifierWithinRange(astRoot, range);
+			const identifier = findIdentifierWithinRange(astRoot, range);
 
 			if (identifier) {
-				const moduleDependencies = this.getModuleDependencies(document, astRoot);
-
-				return codeParser.findOriginatingModuleDependency(
-					astRoot, identifier, moduleDependencies);
+				return findOriginatingModuleDependency(astRoot, identifier,
+					this.getModuleDependencies(document, astRoot));
 			}
 		}
 
 		return undefined;
 	}
 
+	/**
+		 * Disposes of disposable child objects.
+		 * @returns {Void} Nothing.
+		 */
 	dispose () {
 		disposeAll(this);
 	}
