@@ -9,15 +9,18 @@ const FolderCrawler = require('../src/folderCrawler');
 const DefinitionProvider = require('../src/definitionProvider');
 const ReferenceProvider = require('../src/referenceProvider');
 const CompletionItemProvider = require('../src/completionItemProvider');
+const HoverProvider = require('../src/hoverProvider');
 const registerDefinitionProviderStub = sinon.stub();
 const registerReferenceProviderStub = sinon.stub();
 const registerCompletionItemProviderStub = sinon.stub();
+const registerHoverProviderStub = sinon.stub();
 const registerTextEditorCommandStub = sinon.stub();
 const vscodeStub = {
 	languages: {
 		registerDefinitionProvider: registerDefinitionProviderStub,
 		registerReferenceProvider: registerReferenceProviderStub,
-		registerCompletionItemProvider: registerCompletionItemProviderStub
+		registerCompletionItemProvider: registerCompletionItemProviderStub,
+		registerHoverProvider: registerHoverProviderStub
 	},
 	commands: { registerTextEditorCommand: registerTextEditorCommandStub }
 };
@@ -37,11 +40,13 @@ suite('extension', () => {
 		// Registering the RequireJS definition provider,
 		// registering the RequireJS reference provider,
 		// registering the RequireJS completion item provider,
+		// registering the RequireJS hover provider,
 		// adding the "Go To Definition Module" command,
 		// reinitializing RequireJS on configuration change and four
 		// objects (moduleResolver, moduleAnalyser, folderCrawler,
-		// definitionProvider, referenceProvider and completionItemProvider).
-		assert.equal(subscriptions.length, 12);
+		// definitionProvider, referenceProvider, completionItemProvider
+		// and hoverProvider).
+		assert.equal(subscriptions.length, 14);
 		assert.ok(subscriptions[0] instanceof StatusNotifier);
 		assert.ok(subscriptions[1] instanceof ModuleResolver);
 		assert.ok(subscriptions[2] instanceof ModuleFinder);
@@ -50,6 +55,7 @@ suite('extension', () => {
 		assert.ok(subscriptions[5] instanceof DefinitionProvider);
 		assert.ok(subscriptions[6] instanceof ReferenceProvider);
 		assert.ok(subscriptions[7] instanceof CompletionItemProvider);
+		assert.ok(subscriptions[8] instanceof HoverProvider);
 
 		const definitionProviderArgs = registerDefinitionProviderStub.getCall(0).args;
 
@@ -72,6 +78,13 @@ suite('extension', () => {
 		assert.deepEqual(completionItemProviderArgs[0], ['javascript']);
 		assert.ok(completionItemProviderArgs[1] instanceof CompletionItemProvider);
 		assert.deepEqual(completionItemProviderArgs[2], ['/']);
+
+		const hoverProviderArgs = registerHoverProviderStub.getCall(0).args;
+
+		assert.ok(Array.isArray(hoverProviderArgs));
+		assert.equal(hoverProviderArgs.length, 2);
+		assert.deepEqual(hoverProviderArgs[0], ['javascript']);
+		assert.ok(hoverProviderArgs[1] instanceof HoverProvider);
 
 		const goToDefinitionModuleArgs = registerTextEditorCommandStub.getCall(0).args;
 

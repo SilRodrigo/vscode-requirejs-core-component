@@ -2,69 +2,9 @@ const { CompletionItem, CompletionItemKind, workspace } = require('vscode');
 const CompletionItemFileKind = CompletionItemKind.File;
 const ModuleResolver = require('./moduleResolver');
 const FolderCrawler = require('./folderCrawler');
+const modulePath = require('./modulePath');
 const { basename, extname } = require('path');
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
-
-/**
-	 * Determine if we should provide path completion.
-	 * @param {Number} currentLine The current line of the cursor.
-	 * @param {Number} currentPosition The current position of the cursor.
-	 * @returns {Boolean} If there should be completion items provided for the text on the cursor.
-	 */
-function shouldProvideCompletionItems (currentLine, currentPosition) {
-	let singleQuotes = false;
-	let doubleQuotes = false;
-	let backticks = false;
-	let previousChar;
-
-	// check if we are inside quotes
-	for (let i = 0; i < currentPosition; ++i) {
-		const currentChar = currentLine.charAt(i);
-
-		if (previousChar !== '\\') {
-			if (currentChar === '\'') {
-				singleQuotes = !singleQuotes;
-			} else if (currentChar === '"') {
-				doubleQuotes = !doubleQuotes;
-			} else if (currentChar === '`') {
-				backticks = !backticks;
-			}
-		}
-		previousChar = currentChar;
-	}
-
-	return singleQuotes || doubleQuotes || backticks;
-}
-
-/**
-	 * Retrieves the path inserted by the user. This is taken based
-	 * on the last quote or last white space character.
-	 * @param {Number} currentLine The current line of the cursor.
-	 * @param {Number} currentPosition The current position of the cursor.
-	 * @returns {String} The path entered by the user.
-	 */
-function getPathEnteredByUser (currentLine, currentPosition) {
-	let lastQuote = -1;
-	let lastWhiteSpace = -1;
-
-	for (let i = 0; i < currentPosition; ++i) {
-		const currentChar = currentLine[i];
-
-		if (currentChar === '\\') {
-			// skip next character if escaped
-			++i;
-		} else if (currentChar === ' ' || currentChar === '\t') {
-			// handle space
-			lastWhiteSpace = i;
-		} else if (currentChar === '\'' || currentChar === '"' || currentChar === '`') {
-			// handle quotes
-			lastQuote = i;
-		}
-	}
-
-	return currentLine.substring(
-		(lastQuote !== -1 ? lastQuote : lastWhiteSpace) + 1, currentPosition);
-}
 
 /**
 	 * Creates completion items for file-system nodes.
@@ -136,7 +76,7 @@ class CompletionItemProvider {
 		const currentLine = document.getText(document.lineAt(position).range);
 		const currentCharacter = position.character;
 
-		if (!shouldProvideCompletionItems(currentLine, currentCharacter)) {
+		if (!modulePath.isInsideModulePath(currentLine, currentCharacter)) {
 			return Promise.resolve([]);
 		}
 
@@ -174,10 +114,13 @@ class CompletionItemProvider {
 		 * @returns {String} The path to the parent folder of the currently opened file.
 		 */
 	getParentFolderPath (currentFilePath, currentLine, currentPosition) {
-		const userPath = getPathEnteredByUser(currentLine, currentPosition);
+		let userPath = modulePath.getModulePathUpToPosition(currentLine, currentPosition);
 		const pluginSeparator = userPath.indexOf('!');
-		const modulePath = pluginSeparator > 0 ? userPath.substr(pluginSeparator + 1) : userPath;
-		const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath);
+
+		if (pluginSeparator > 0) {
+			userPath = userPath.substr(pluginSeparator + 1);
+		}
+		const filePath = this.moduleResolver.resolveModulePath(userPath, currentFilePath);
 
 		return filePath.substr(0, filePath.length - 3);
 	}
