@@ -1,9 +1,8 @@
-const vscode = require('vscode');
-const workspace = vscode.workspace;
+const { workspace } = require('vscode');
 const amodroConfig = require('amodro-trace/config');
 const { addDisposable, disposeAll } = require('./disposableHost');
-const fs = require('fs');
-const path = require('path');
+const { readFileSync } = require('fs');
+const { normalize, join, dirname } = require('path');
 const requirejs = require('requirejs');
 
 class ModuleResolver {
@@ -20,13 +19,13 @@ class ModuleResolver {
 		 * @returns {void} Nothing
 		 */
 	configure () {
-		const requireModuleSupport = vscode.workspace.getConfiguration('requireModuleSupport');
-		const rootPath = vscode.workspace.rootPath;
+		const requireModuleSupport = workspace.getConfiguration('requireModuleSupport');
+		const rootPath = workspace.rootPath;
 		const config = {
 			// Handle the existing modulePath property as baseUrl for require.config()
 			// to support simple scenarios. More complex projects should supply also
 			// configFile in addition to baseUrl to resolve any module path.
-			baseUrl: path.join(rootPath, requireModuleSupport.get('modulePath'))
+			baseUrl: join(rootPath, requireModuleSupport.get('modulePath'))
 		};
 		// Reuse the configuration for debugging a requirejs project for editing too.
 		// Prevent maintaining the same configuration in settings.json.
@@ -37,14 +36,22 @@ class ModuleResolver {
 		delete requirejs.s.contexts._;
 
 		if (configFile) {
-			const configContent = fs.readFileSync(path.join(rootPath, configFile), 'utf-8');
+			const configPath = join(rootPath, configFile);
+			const configContent = readFileSync(configPath, 'utf-8');
 			const configObject = amodroConfig.find(configContent);
 
 			if (configObject) {
 				Object.assign(config, configObject);
 			}
+
+			if (!this.fileSystemWatcher) {
+				this.fileSystemWatcher = workspace.createFileSystemWatcher(configPath);
+				addDisposable(this.fileSystemWatcher);
+				addDisposable(this.fileSystemWatcher.onDidChange(() => this.configure()));
+				addDisposable(this.fileSystemWatcher.onDidCreate(() => this.configure()));
+				addDisposable(this.fileSystemWatcher.onDidDelete(() => this.configure()));
+			}
 		}
-		this.configuration = config;
 		requirejs.config(config);
 	}
 
@@ -61,7 +68,7 @@ class ModuleResolver {
 		let filePath;
 
 		if (pluginSeparator > 0) {
-			const pluginExtensions = vscode.workspace.getConfiguration('requireModuleSupport').get('pluginExtensions');
+			const pluginExtensions = workspace.getConfiguration('requireModuleSupport').get('pluginExtensions');
 			const pluginName = modulePath.substr(0, pluginSeparator);
 
 			filePath = modulePath.substr(pluginSeparator + 1);
@@ -80,10 +87,10 @@ class ModuleResolver {
 
 		// The global requirejs.toUrl does not resolve relative module paths.
 		if (filePath.startsWith('./')) {
-			filePath = path.join(path.dirname(currentFilePath), filePath);
+			filePath = join(dirname(currentFilePath), filePath);
 		}
 
-		return path.normalize(requirejs.toUrl(filePath));
+		return normalize(requirejs.toUrl(filePath));
 	}
 
 	dispose () {

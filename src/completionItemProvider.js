@@ -12,19 +12,14 @@ const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
 	 * @returns {Array} Completion items for the file-system nodes.
 	 */
 function createCompletionItems (items) {
-	function endsWith (hay, needle) {
-		return hay.lastIndexOf(needle) === hay.length - needle.length;
-	}
-
 	const cutExtensions = workspace
 		.getConfiguration('requireModuleSupport')
 		.get('cutFileCompletionExtensions');
-	// build the list of the completion items
 	const result = items.map(file => {
 		const name = file.name;
 		const completion = new CompletionItem(name);
 
-		// show folders before files
+		// Show folders before files.
 		if (file.directory) {
 			completion.insertText = name;
 			completion.label += '/';
@@ -35,8 +30,8 @@ function createCompletionItems (items) {
 			};
 			completion.sortText = 'd';
 		} else {
-			// remove the extension of files, if required
-			if (cutExtensions.some(extension => endsWith(name, extension))) {
+			// Remove the extension of files, if needed.
+			if (cutExtensions.some(extension => name.endsWith(extension))) {
 				completion.insertText = basename(name, extname(name));
 			} else {
 				completion.insertText = name;
@@ -48,7 +43,7 @@ function createCompletionItems (items) {
 		return completion;
 	});
 
-	// add up one folder item
+	// Add the parent directory to the completion list.
 	result.unshift(new CompletionItem('..'));
 
 	return Promise.resolve(result);
@@ -76,11 +71,16 @@ class CompletionItemProvider {
 		const currentLine = document.getText(document.lineAt(position).range);
 		const currentCharacter = position.character;
 
-		if (!modulePath.isInsideModulePath(currentLine, currentCharacter)) {
+		if (!modulePath.isInsideString(currentLine, currentCharacter)) {
 			return Promise.resolve([]);
 		}
 
-		const folderPath = this.getParentFolderPath(document.fileName, currentLine, currentCharacter);
+		const folderPath = this.getFocusedFolderPath(document.fileName, currentLine, currentCharacter);
+
+		if (!folderPath) {
+			return Promise.resolve([]);
+		}
+
 		const statusNotifier = this.folderCrawler.statusNotifier;
 
 		statusNotifier.show();
@@ -106,22 +106,28 @@ class CompletionItemProvider {
 	}
 
 	/**
-		 * Builds the current folder path based on the current file.
-		 * and the path from the current line.
+		 * Builds a file-system path based on the focused string content content interpreted as a module path.
 		 * @param {String} currentFilePath The file-system path to the currently opened file.
 		 * @param {Number} currentLine The current line of the cursor.
 		 * @param {Number} currentPosition The current position of the cursor.
-		 * @returns {String} The path to the parent folder of the currently opened file.
+		 * @returns {String} The file-system path or `undefined`, if the string cannot be interpreted as a module path.
 		 */
-	getParentFolderPath (currentFilePath, currentLine, currentPosition) {
+	getFocusedFolderPath (currentFilePath, currentLine, currentPosition) {
 		let userPath = modulePath.getModulePathUpToPosition(currentLine, currentPosition);
 		const pluginSeparator = userPath.indexOf('!');
 
+		// Do not let the plugin add the plugin-specific file extension.
 		if (pluginSeparator > 0) {
 			userPath = userPath.substr(pluginSeparator + 1);
 		}
+		if (!modulePath.startsLikeModulePath(userPath)) {
+			return undefined;
+		}
+
 		const filePath = this.moduleResolver.resolveModulePath(userPath, currentFilePath);
 
+		// Without a plugin, every resolved path is handled as a JavaScript
+		// module and gets the extension ".js" appended.
 		return filePath.substr(0, filePath.length - 3);
 	}
 

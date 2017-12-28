@@ -13,37 +13,38 @@ class HoverProvider {
 	}
 
 	/**
-		 * Provide the list of completion file items for the folder path entered by the user.
+		 * Provide the resolved path of the module name, which the mouse hovers above.
 		 * @param {TextDocument} document The document in which the command was invoked.
 		 * @param {Position} position The position at which the command was invoked.
 		 * @param {CancellationToken} cancellationToken A cancellation token.
-		 * @returns {Promise} Resolves with an array of file completion items.
+		 * @returns {Promise} Resolves with the hover content or `undefined`.
 		 */
 	provideHover (document, position /* cancellationToken */) {
 		const currentLine = document.getText(document.lineAt(position).range);
 		const currentCharacter = position.character;
 
-		if (!modulePath.isInsideModulePath(currentLine, currentCharacter)) {
+		if (!modulePath.isInsideString(currentLine, currentCharacter)) {
 			return undefined;
 		}
 
-		const filePath = this.getFilePath(document.fileName, currentLine, currentCharacter);
+		const filePath = this.getFocusedFilePath(document.fileName, currentLine, currentCharacter);
 
-		return new Hover(filePath);
+		return filePath ? new Hover(filePath) : undefined;
 	}
 
 	/**
-		 * Builds the resolved module path based on the current file.
+		 * Builds a file-system path based on the focused string content interpreted as a module path.
 		 * and the path from the current line.
 		 * @param {String} currentFilePath The file-system path to the currently opened file.
 		 * @param {Number} currentLine The current line of the cursor.
 		 * @param {Number} currentPosition The current position of the cursor.
-		 * @returns {String} The resolved module path.
+		 * @returns {String} The file-system path or `undefined`, if the string cannot be interpreted as a module path.
 		 */
-	getFilePath (currentFilePath, currentLine, currentPosition) {
+	getFocusedFilePath (currentFilePath, currentLine, currentPosition) {
 		const userPath = modulePath.getSurroundingModulePath(currentLine, currentPosition);
 
-		return this.moduleResolver.resolveModulePath(userPath, currentFilePath);
+		return modulePath.startsLikeModulePath(userPath)
+			&& this.moduleResolver.resolveModulePath(userPath, currentFilePath);
 	}
 
 	/**

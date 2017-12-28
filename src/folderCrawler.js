@@ -35,10 +35,10 @@ class FolderCrawler {
 	/**
 		 * Checks if the path points to an existing folder.
 		 * @param {String} folderPath The file-system path to check.
-		 * @returns {Promise} Resolves with the directory stats if the path
-		 * points to a directory. Rejected with `null` if the path is valid,
-		 * but does not point to a directory. If the path is invalid or the
-		 * access otherwise fails, the promise will be rejected with the error.
+		 * @returns {Promise} Resolves if the path * points to a directory.
+		 * Rejected with `null` if the path is valid, but does not point to
+		 * a directory. If the path is invalid or the access otherwise fails,
+		 * the promise will be rejected with the error.
 		 */
 	checkDirectory (folderPath) {
 		return new Promise((resolve, reject) => {
@@ -46,7 +46,7 @@ class FolderCrawler {
 				if (error || !stats.isDirectory()) {
 					reject(error);
 				} else {
-					resolve(stats);
+					resolve();
 				}
 			});
 		});
@@ -64,14 +64,12 @@ class FolderCrawler {
 				if (error) {
 					reject(error);
 				} else {
-					const children = items.map(name => {
+					resolve(items.map(name => {
 						return {
 							name: name,
 							path: join(folderPath, name)
 						};
-					});
-
-					resolve(children);
+					}));
 				}
 			});
 		});
@@ -83,7 +81,7 @@ class FolderCrawler {
 		 * @param {CancellationToken} cancellationToken A cancellation token.
 		 * @param {Array} resultItems Output parameter for gathering module references.
 		 * @returns {Promise} Resolves with an array of items describing the
-		 * folder children: {name, path, stats}.
+		 * folder children: {name, path, directory}.
 		 */
 	inspectFileItems (items, cancellationToken, resultItems) {
 		const outputItems = resultItems || [];
@@ -91,9 +89,12 @@ class FolderCrawler {
 		this.statusNotifier.notify('search', 'Inspecting ' + items.length + '...',
 			'Inspecting files and directories... (remaining ' + items.length + ')');
 
+		// Limit the number of concurrently inspected files. When working
+		// by batches, the operation will be stoppable after every batch.
 		const inspections = items.splice(0, this.batchSize).map(item => {
 			return new Promise(resolve => {
-				// silently ignore permissions errors
+				// Silently ignore permissions errors; if the `directory`
+				// property is not a boolean, `stat` failed.
 				stat(item.path, (ignoredError, stats) => {
 					item.directory = stats && stats.isDirectory();
 					resolve(item);
@@ -101,30 +102,34 @@ class FolderCrawler {
 			});
 		});
 
-		function endsWith (hay, needle) {
-			return hay.lastIndexOf(needle) === hay.length - needle.length;
-		}
-
 		return Promise.all(inspections)
 			.then(batch => {
 				push.apply(outputItems, batch.filter(item => {
+					// Skip file-system items, which could jot be accessed.
 					if (item.directory === null) {
 						return false;
 					}
 
 					const name = item.name;
 
+					// Directories will be always offered. Files will be
+					// offered, if they are specified for inclusion and
+					// not for exclusion. An empty including list means
+					// to include all files.
 					return item.directory
 						|| ((!this.includedExtensions.length
 						|| this.includedExtensions.some(
-							extension => endsWith(name, extension)))
+							extension => name.endsWith(extension)))
 						&& !this.excludedExtensions.some(
-							extension => endsWith(name, extension)));
+							extension => name.endsWith(extension)));
 				}));
+
+				// Stop processing if this was the last batch or the operation has been cancelled.
 				if (!items.length || cancellationToken.isCancellationRequested) {
 					return outputItems;
 				}
 
+				// Process the rest of items after curring the batch above.
 				return this.inspectFileItems(items, cancellationToken, outputItems);
 			});
 	}

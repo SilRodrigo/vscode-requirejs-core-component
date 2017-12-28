@@ -4,16 +4,17 @@
 	 * @param {Number} currentPosition The current position of the cursor.
 	 * @returns {Boolean} If the cursor is inside a string.
 	 */
-function isInsideModulePath (currentLine, currentPosition) {
+function isInsideString (currentLine, currentPosition) {
 	let singleQuotes = false;
 	let doubleQuotes = false;
 	let backticks = false;
 	let previousChar;
 
-	// check if we are inside quotes
+	// Check if we are inside quotes.
 	for (let i = 0; i < currentPosition; ++i) {
 		const currentChar = currentLine.charAt(i);
 
+		// Skip escaped characters.
 		if (previousChar !== '\\') {
 			if (currentChar === '\'') {
 				singleQuotes = !singleQuotes;
@@ -30,12 +31,36 @@ function isInsideModulePath (currentLine, currentPosition) {
 }
 
 /**
+	 * Check if the character may appear at the beginning of a module name.
+	 * @param {String} character The character to check.
+	 * @returns {Boolean} If the character may appear at the beginning of a module name.
+	 */
+function canStartModuleName (character) {
+	return character >= '0' && character <= '9'
+		|| character >= 'A' && character <= 'Z'
+		|| character >= 'a' && character <= 'z';
+}
+
+/**
+	 * Guesses if the specified string looks like a start of a module path.
+	 * @param {String} apparentPath An apparent module path start.
+	 * @returns {Boolean} If the specified string looks like a start of a module path.
+	 */
+function startsLikeModulePath (apparentPath) {
+	if (apparentPath.startsWith('./') || apparentPath.startsWith('../')) {
+		return true;
+	}
+
+	return canStartModuleName(apparentPath.charAt(0));
+}
+
+/**
 	 * Check if the character is a single quote, a double quote or a backtick.
-	 * @param {String} char The character to check.
+	 * @param {String} character The character to check.
 	 * @returns {Boolean} If the character is a quote.
 	 */
-function isQuote (char) {
-	return char === '\'' || char === '"' || char === '`';
+function isQuote (character) {
+	return character === '\'' || character === '"' || character === '`';
 }
 
 /**
@@ -49,21 +74,21 @@ function getModulePathUpToPosition (currentLine, currentPosition) {
 	let lastQuote = -1;
 	let lastWhiteSpace = -1;
 
+	// Find the last quote on the line, which starts a string.
 	for (let i = 0; i < currentPosition; ++i) {
 		const currentChar = currentLine[i];
 
 		if (currentChar === '\\') {
-			// skip next character if escaped
+			// Skip the next character if escaped.
 			++i;
 		} else if (currentChar === ' ' || currentChar === '\t') {
-			// handle space
 			lastWhiteSpace = i;
 		} else if (isQuote(currentChar)) {
-			// handle quotes
 			lastQuote = i;
 		}
 	}
 
+	// Cut the content after the last quote found on the line.
 	return currentLine.substring(
 		(lastQuote >= 0 ? lastQuote : lastWhiteSpace) + 1, currentPosition);
 }
@@ -81,38 +106,40 @@ function getSurroundingModulePath (currentLine, currentPosition) {
 	let trailingQuote = -1;
 	let i;
 
+	// Find the nearest quote on the line before the cursor.
 	for (i = currentPosition; i > 0; --i) {
 		const currentChar = currentLine[i];
 		const precedingChar = currentLine[i - 1];
 
 		if (precedingChar === '\\') {
-			// skip next character if escaped
+			// Move to the preceding character if escaped.
 			--i;
 		} else if (isQuote(currentChar)) {
-			// handle quotes
 			leadingQuote = i;
 			break;
 		}
 	}
 
+	// Find the nearest quote on the line after the cursor.
 	for (i = currentPosition; i < lineLength; ++i) {
 		const currentChar = currentLine[i];
 
 		if (currentChar === '\\') {
-			// skip next character if escaped
+			// Skip the next character if escaped.
 			++i;
 		} else if (isQuote(currentChar)) {
-			// handle quotes
 			trailingQuote = i;
 			break;
 		}
 	}
 
+	// Cut the content between the quotes surrounding the cursoron the line.
 	return currentLine.substring(leadingQuote + 1, trailingQuote);
 }
 
 module.exports = {
-	isInsideModulePath: isInsideModulePath,
+	isInsideString: isInsideString,
+	startsLikeModulePath: startsLikeModulePath,
 	getModulePathUpToPosition: getModulePathUpToPosition,
 	getSurroundingModulePath: getSurroundingModulePath
 };
