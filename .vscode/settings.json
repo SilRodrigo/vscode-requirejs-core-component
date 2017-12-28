@@ -3,6 +3,10 @@
 	"files.exclude": {
 		".vscode-test": true,
 		"coverage": true,
+		"examples/**/out": true,
 		"node_modules": true
+	},
+	"search.exclude": {
+		"examples/**/libraries": true
 	}
 }
