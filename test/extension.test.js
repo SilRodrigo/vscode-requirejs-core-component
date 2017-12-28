@@ -5,15 +5,19 @@ const StatusNotifier = require('../src/statusNotifier');
 const ModuleResolver = require('../src/moduleResolver');
 const ModuleFinder = require('../src/moduleFinder');
 const ModuleAnalyser = require('../src/moduleAnalyser');
+const FolderCrawler = require('../src/folderCrawler');
 const DefinitionProvider = require('../src/definitionProvider');
 const ReferenceProvider = require('../src/referenceProvider');
+const CompletionItemProvider = require('../src/completionItemProvider');
 const registerDefinitionProviderStub = sinon.stub();
 const registerReferenceProviderStub = sinon.stub();
+const registerCompletionItemProviderStub = sinon.stub();
 const registerTextEditorCommandStub = sinon.stub();
 const vscodeStub = {
 	languages: {
 		registerDefinitionProvider: registerDefinitionProviderStub,
-		registerReferenceProvider: registerReferenceProviderStub
+		registerReferenceProvider: registerReferenceProviderStub,
+		registerCompletionItemProvider: registerCompletionItemProviderStub
 	},
 	commands: { registerTextEditorCommand: registerTextEditorCommandStub }
 };
@@ -32,17 +36,20 @@ suite('extension', () => {
 
 		// Registering the RequireJS definition provider,
 		// registering the RequireJS reference provider,
+		// registering the RequireJS completion item provider,
 		// adding the "Go To Definition Module" command,
 		// reinitializing RequireJS on configuration change and four
-		// objects (moduleResolver, moduleAnalyser, definitionProvider
-		// and referenceProvider).
-		assert.equal(subscriptions.length, 9);
+		// objects (moduleResolver, moduleAnalyser, folderCrawler,
+		// definitionProvider, referenceProvider and completionItemProvider).
+		assert.equal(subscriptions.length, 12);
 		assert.ok(subscriptions[0] instanceof StatusNotifier);
 		assert.ok(subscriptions[1] instanceof ModuleResolver);
 		assert.ok(subscriptions[2] instanceof ModuleFinder);
 		assert.ok(subscriptions[3] instanceof ModuleAnalyser);
-		assert.ok(subscriptions[4] instanceof DefinitionProvider);
-		assert.ok(subscriptions[5] instanceof ReferenceProvider);
+		assert.ok(subscriptions[4] instanceof FolderCrawler);
+		assert.ok(subscriptions[5] instanceof DefinitionProvider);
+		assert.ok(subscriptions[6] instanceof ReferenceProvider);
+		assert.ok(subscriptions[7] instanceof CompletionItemProvider);
 
 		const definitionProviderArgs = registerDefinitionProviderStub.getCall(0).args;
 
@@ -57,6 +64,14 @@ suite('extension', () => {
 		assert.equal(referenceProviderArgs.length, 2);
 		assert.equal(referenceProviderArgs[0], 'javascript');
 		assert.ok(referenceProviderArgs[1] instanceof ReferenceProvider);
+
+		const completionItemProviderArgs = registerCompletionItemProviderStub.getCall(0).args;
+
+		assert.ok(Array.isArray(completionItemProviderArgs));
+		assert.equal(completionItemProviderArgs.length, 3);
+		assert.deepEqual(completionItemProviderArgs[0], ['javascript']);
+		assert.ok(completionItemProviderArgs[1] instanceof CompletionItemProvider);
+		assert.deepEqual(completionItemProviderArgs[2], ['/']);
 
 		const goToDefinitionModuleArgs = registerTextEditorCommandStub.getCall(0).args;
 

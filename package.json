@@ -46,6 +46,21 @@
 					"default": "",
 					"description": "File globbing pattern to exclude when looking for JavaScript modules in this project"
 				},
+				"requireModuleSupport.cutFileCompletionExtensions": {
+					"type": "array",
+					"default": [".js", ".css", ".less", ".scss", ".hbs", ".html"],
+					"description": "File extensions to cut, if the file name is offered in module path completion"
+				},
+				"requireModuleSupport.includeFileCompletionExtensions": {
+					"type": "array",
+					"default": [],
+					"description": "Only the specified file extensions will be included for module path completion; all will be included, if empty"
+				},
+				"requireModuleSupport.excludeFileCompletionExtensions": {
+					"type": "array",
+					"default": [],
+					"description": "The specified file extensions will not be included for module path completion"
+				},
 				"requireModuleSupport.modulePath": {
 					"type": "string",
 					"default": "",
