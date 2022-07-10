@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.0.1
+
+Fix extension title and logo.
+
 # 1.0.0
 
 Fork the original project and rewrite it to parse sources to AST and traverse it instead of using regexp matching.
