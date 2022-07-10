@@ -1,11 +1,22 @@
 # Change Log
 
+# 1.0.0
+
+Fork the original project and rewrite it to parse sources to AST and traverse it instead of using regexp matching.
+
+* Autocomplete module names when typing.
+* Show module paths when hovering above module names.
+* Rename imported and exported symbols.
+* Support module formats CJS, AMD, UMD and ES.
+* Support modern JavaScript (ES2021).
+
+The new extension might behave differently than the original one, but it should follow the language more correctly.
+
 ## [0.1.9] - 2017-22-12
 ### Added
 
 - Added support for comments in require dependency list. Special thanks to [prantlf](https://github.com/prantlf)
 - Fixed problem navigating to an inline require statement's module.
-
 
 ## [0.1.7] - 2017-21-12
 ### Added
@@ -48,7 +59,7 @@
             var moduleB = require('moduleB');
             moduleB.prop;
         });
-    
+
 ## [0.0.32] - 2017-06-07
 ### Changed
 
@@ -91,11 +102,11 @@
 
 - Imported module does not have to be used with new keyword anymore.
 - Simple comments does not interfere with definition navigation.
-- Fixed a problem causing navigation error in some cases. 
+- Fixed a problem causing navigation error in some cases.
 
 ### Added
 
-- New setting (onlyNavigateToFile) to decide whether to do a final search on the landing page. 
+- New setting (onlyNavigateToFile) to decide whether to do a final search on the landing page.
 
 ## [0.0.18] - 2017-13-03
 ### Changed
@@ -110,7 +121,7 @@
 ## [0.0.15] - 2017-13-03
 ### Changed
 
-- Removed code eval. 
+- Removed code eval.
 - Fixed multiline module name / function argument list problem.
 
 ### Added

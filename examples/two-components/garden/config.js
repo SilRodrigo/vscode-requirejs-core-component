@@ -1,6 +1,6 @@
 require.config({
-	paths: {
-		nature: '../nature/src',
-		garden: 'src'
-	}
+  paths: {
+    nature: '../nature/src',
+    garden: 'src'
+  }
 });

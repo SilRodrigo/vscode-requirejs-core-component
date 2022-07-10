@@ -1,68 +1,68 @@
 [
-	{
-		"name": "variable \"moduleB\"",
-		"source": {
-			"position": {
-				"line": 1,
-				"character": 8
-			}
-		},
-		"target": {
-			"file": "moduleB.js",
-			"range": {
-				"start": {
-					"line": 0,
-					"character": 0
-				},
-				"end": {
-					"line": 0,
-					"character": 0
-				}
-			}
-		}
-	},
-	{
-		"name": "object \"moduleB\"",
-		"source": {
-			"position": {
-				"line": 2,
-				"character": 4
-			}
-		},
-		"target": {
-			"file": "moduleB.js",
-			"range": {
-				"start": {
-					"line": 0,
-					"character": 0
-				},
-				"end": {
-					"line": 0,
-					"character": 0
-				}
-			}
-		}
-	},
-	{
-		"name": "property \"prop\"",
-		"source": {
-			"position": {
-				"line": 2,
-				"character": 12
-			}
-		},
-		"target": {
-			"file": "moduleB.js",
-			"range": {
-				"start": {
-					"line": 2,
-					"character": 8
-				},
-				"end": {
-					"line": 2,
-					"character": 12
-				}
-			}
-		}
-	}
+  {
+    "name": "variable \"moduleB\"",
+    "source": {
+      "position": {
+        "line": 1,
+        "character": 8
+      }
+    },
+    "target": {
+      "file": "moduleB.js",
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 0,
+          "character": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "object \"moduleB\"",
+    "source": {
+      "position": {
+        "line": 2,
+        "character": 4
+      }
+    },
+    "target": {
+      "file": "moduleB.js",
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 0,
+          "character": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "property \"prop\"",
+    "source": {
+      "position": {
+        "line": 2,
+        "character": 12
+      }
+    },
+    "target": {
+      "file": "moduleB.js",
+      "range": {
+        "start": {
+          "line": 2,
+          "character": 8
+        },
+        "end": {
+          "line": 2,
+          "character": 12
+        }
+      }
+    }
+  }
 ]

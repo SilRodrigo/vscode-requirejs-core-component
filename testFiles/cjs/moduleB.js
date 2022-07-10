@@ -1,3 +1,3 @@
 module.exports = {
-	prop: 6
+  prop: 6
 };

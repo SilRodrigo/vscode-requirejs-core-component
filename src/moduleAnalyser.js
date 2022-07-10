@@ -1,103 +1,307 @@
-const { workspace } = require('vscode');
-const { findDependencies, findCjsDependencies } = require('amodro-trace/parse');
-const { parseModule, findIdentifierWithinRange, findOriginatingModuleDependency } = require('./codeParser');
-const CacheByDocument = require('./cacheByDocument');
-const { addDisposable, disposeAll } = require('./disposableHost');
+const { workspace, window, Uri } = require('vscode');
+const { findDependencies, findCjsDependencies }
+= require('@prantlf/amodro-trace/parse');
+const { detectDefinesOrRequires, detectImportsAndExports }
+  = require('requirejs-esm/dist/api');
+const { parseModule, findIdentifierOrLiteralWithinRange }
+  = require('./codeParser');
+const { findModuleExport, findBodyReturn, findOriginatingModuleDependency }
+  = require('./codeAnalyser');
+const ModuleResolver = require('./moduleResolver');
+const CacheByDocumentOrFile = require('./cacheByDocumentOrFile');
+const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
 
+/**
+ * Analyses JavaScript files to find out, if they are RequireJS modules
+ * and to extract their module dependencies and exports. This relates
+ * to an analysis of an identifier - which module it came from. Analyses
+ * and parsed JavaScript AST trees are cached, as long as source
+ * documents do not change.
+ */
 class ModuleAnalyser {
-	/**
-		 * Initializes a new instance.
-		 */
-	constructor () {
-		this.moduleDependencyCache = new CacheByDocument();
-		addDisposable(this.moduleDependencyCache);
-		this.parsedModuleCache = new CacheByDocument();
-		addDisposable(this.parsedModuleCache);
-	}
+  /**
+   * Initializes a new instance.
+   * @param {ModuleResolver} moduleResolver Module to file path resolution helper.
+   */
+  constructor (moduleResolver) {
+    hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver);
+    hostOrCreateDisposable(this, 'parsedCache', CacheByDocumentOrFile);
+    hostOrCreateDisposable(this, 'analysedCache', CacheByDocumentOrFile);
+  }
 
-	/**
-		 * Returns AST of the specified document to be used in other functions
-		 * @param {TextDocument} document Original document
-		 * @returns {Object} JavaScript AST
-		 */
-	getParsedModule (document) {
-		let astRoot = this.parsedModuleCache.getCachedObject(document);
+  /**
+   * Adapt cache sizes, so that they can handle at least the specified
+   * module count.
+   * @param {number} moduleCount The expected module count to handle
+   * @returns {Void} Nothing.
+   */
+  adaptCacheSizes (moduleCount) {
+    this.parsedCache.adaptCacheSize(moduleCount);
+    this.analysedCache.adaptCacheSize(moduleCount);
+  }
 
-		if (!astRoot) {
-			astRoot = parseModule(document.getText(), { loc: true });
-			this.parsedModuleCache.setCachedObject(document, astRoot);
-		}
+  /**
+   * Returns AST of the specified document to be used in other functions
+   * @param {TextDocument} document Original document
+   * @returns {Object} JavaScript AST
+   */
+  getParsedModule (document /*, documentPath*/) {
+    let astRoot = this.parsedCache.getCachedObject(document);
 
-		return astRoot;
-	}
+    if (!astRoot) {
+      const supportJsx = !!process.env.VSCODE_REQUIREJS_SUPPORT_JSX || workspace
+        .getConfiguration('requireModuleSupport')
+        .get('enableJsxModules');
+      const supportEsm = !!process.env.VSCODE_REQUIREJS_SUPPORT_ESM || workspace
+        .getConfiguration('requireModuleSupport')
+        .get('enableEsModules');
+      try {
+        // Support getting content from both documents and files.
+        // const message = `Parsing "${workspace.asRelativePath(documentPath || document.fileName, false)}"`;
+        // console.time(message);
+        astRoot = parseModule(document.getText && document.getText()
+          || document.content || '', { loc: true, jsx: supportJsx, module: supportEsm });
+        // console.timeEnd(message);
+      } catch (error) {
+        console.warn('Parsing "' // eslint-disable-line no-console
+          + (document.fileName || document.path)
+          + '" failed:', error);
+        astRoot = {};
+      }
+      this.parsedCache.setCachedObject(document, astRoot);
+    }
 
-	/**
-		 * Returns obj with name/path pairs from define/require statement
-		 * @param {TextDocument} document Original document
-		 * @param {Object} astRoot Parsed document
-		 * @returns {Object} Contains name/path pairs
-		 */
-	getModuleDependencies (document, astRoot) {
-		let dependencies = this.moduleDependencyCache.getCachedObject(document);
+    return astRoot;
+  }
 
-		if (!dependencies) {
-			// Pure CommonJS syntax needs a different lookup method.
-			const enableCjsModules = workspace
-				.getConfiguration('requireModuleSupport')
-				.get('enableCjsModules');
-			const findModuleDependencies = enableCjsModules
-				? findCjsDependencies : findDependencies;
+  /**
+   * Returns named and unnamed imports and exports of the specified document.
+   *
+   * @param {TextDocument} document The document with the module source.
+   * @param {Object} astRoot The parsed module source.
+   * @returns {Object} Object `{namedDependencies, unnamedDependencies, exports}`/
+   * `namedDependencies` is a map `{name: path}` pointing formal parameters
+   * to module paths, were their value came from. `unnamedDependencies` is
+   * an array or module paths. `exports` is an object with the key `default`
+   * pointing to the name of the local variable, which is exported.
+   */
+  getAnalysedModule (document, astRoot) {
+    let analysis = this.analysedCache.getCachedObject(document);
 
-			dependencies = findModuleDependencies(astRoot);
-			const modules = dependencies.modules;
+    if (!analysis) {
+      let namedDependencies, unnamedDependencies, moduleExports;
 
-			// Create a map {formal parameter -> module path} from
-			// the two arrays with keys and vales.
-			dependencies = dependencies.params.reduce(function (result, param, index) {
-				result[param] = modules[index];
+      // Pure CommonJS syntax needs a different lookup method.
+      const enableCjsModules = workspace
+        .getConfiguration('requireModuleSupport')
+        .get('enableCjsModules');
+      if (enableCjsModules) {
+        const { params, modules } = findCjsDependencies(astRoot);
+        // Create a map {formal parameter -> module path} from
+        // the two arrays with keys and vales.
+        namedDependencies = params.reduce((result, param, index) => {
+          result[param] = modules[index];
+          return result;
+        }, {});
+        unnamedDependencies = modules.slice(params.length);
+        moduleExports = { default: findModuleExport(astRoot) };
+      } else {
+        const amds = detectDefinesOrRequires(astRoot)
+        if (amds.length) {
+          const { deps, params, factory, body } = amds[0];
+          const { body: block = {} } = factory || body || {};
+          if (deps) {
+            const depNodes = deps.elements || [];
+            namedDependencies = params.reduce((result, param, index) => {
+              if (param.type === 'Identifier') {
+                const dep = depNodes[index];
+                if (dep && dep.type === 'Literal') {
+                  result[param.name] = dep.value;
+                }
+              }
+              return result;
+            }, {});
+            unnamedDependencies = depNodes
+              .slice(params.length)
+              .reduce((result, dep) => {
+                if (dep.type === 'Literal') {
+                  result.push(dep.value);
+                }
+                return result;
+              }, []);
+          } else {
+            namedDependencies = {};
+            unnamedDependencies = [];
+          }
+          moduleExports = { default: findBodyReturn(block) };
+        } else {
+          const { imports, exports } = detectImportsAndExports(astRoot);
+          if (imports.length || exports.length) {
+            namedDependencies = {};
+            unnamedDependencies = [];
+            for (const { source, local, specifiers } of imports) {
+              if (source.type === 'Literal') {
+                if (local) {
+                  if (local.type === 'Identifier') {
+                    namedDependencies[local.name] = source.value;
+                  }
+                } else if (!specifiers) {
+                  unnamedDependencies.push(source.value);
+                }
+              }
+            }
+            moduleExports = {};
+            for (const { node, default: alone } of exports) {
+              if (alone) {
+                const { declaration } = node;
+                if (declaration.type === 'Identifier') {
+                  moduleExports.default = declaration.name;
+                }
+              }
+            }
+          } else {
+            const { params, modules } = findDependencies(astRoot);
+            namedDependencies = params.reduce((result, param, index) => {
+              result[param] = modules[index];
+              return result;
+            }, {});
+            unnamedDependencies = modules.slice(params.length);
+            moduleExports = { default: findModuleExport(astRoot) };
+          }
+        }
+      }
 
-				return result;
-			}, {});
-			this.moduleDependencyCache.setCachedObject(document, dependencies);
-		}
+      analysis = { namedDependencies, unnamedDependencies, exports: moduleExports };
+      this.analysedCache.setCachedObject(document, analysis);
+    }
 
-		return dependencies;
-	}
+    return analysis;
+  }
 
-	/**
-		 * Returns information about the originating module of the currently
-		 * selected identifier, if it can ce tracked to a module, which the
-		 * current module depends on.
-		 * @param {TextDocument} document The document in which the command was invoked.
-		 * @param {Position} position The position at which the command was invoked.
-		 * @returns {Object} Object with `{modulePath, imported, selected}`,
-		 * where `modulePath` is the RequireJS path of the originating module,
-		 * `imported` the formal parameter name with the module exports and
-		 * `selected` the currently selected identifier.
-		 */
-	getOriginatingModuleDependency (document, position) {
-		const range = document.getWordRangeAtPosition(position);
+  /**
+   * Returns module path of RequireJS dependencies of the specified
+   * document, with the formal parameter names that expose their
+   * exports.
+   * @param {TextDocument} document The document with the module source.
+   * @param {Object} astRoot The parsed module source.
+   * @returns {Object} Map `{name: path}` pointing formal parameter
+   * to module paths, were their value came from.
+   */
+  getModuleDependencies (document, astRoot) {
+    try {
+      return this.getAnalysedModule(document, astRoot).namedDependencies;
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
-		if (range) {
-			const astRoot = this.getParsedModule(document);
-			const identifier = findIdentifierWithinRange(astRoot, range);
+  /**
+   * Returns the name of the exported object identifier. It works well,
+   * only if module set their exports to a variable first and return
+   * the export by that variable. Modules, which depend on it usually
+   * use the same name for formal parameters carrying the same object.
+   * @param {TextDocument} document The document with the module source.
+   * @param {Object} astRoot The parsed module source.
+   * @returns {string} The name of the exported object identifier.
+   */
+  getModuleExport (document, astRoot) {
+    try {
+      return this.getAnalysedModule(document, astRoot).exports.default;
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
-			if (identifier) {
-				return findOriginatingModuleDependency(astRoot, identifier,
-					this.getModuleDependencies(document, astRoot));
-			}
-		}
+  /**
+   * Returns information about the originating module of the currently
+   * selected identifier, if it can be tracked to a module, which the
+   * current module depends on, or it it can be tracked to the export
+   * returned from the current module (the current module is the
+   * originating module).
+   * @param {TextDocument} document The document with the module source.
+   * @param {Position} position The position of the identifier to
+   * investigate.
+   * @returns {Object} Object describing the identifier origin:
+   * - {String} selected The actually selected identifier at the
+   *   specified position in the document.
+   * - {String} imported Object identifier, which points to the tracked
+   *   dependency export. It will be different, than the selected
+   *   identifier, if the latter is a member property or method.
+   * - {String} modulePath Is set, if the identifier was tracked to
+   *   other module's export.
+   * - {Array} referencePaths Is set, if the identifier is exported from
+   *   the current module and contains possible module paths, which the
+   *   current module can be referenced by.
+   * - {String} filePath Is set, if the identifier was tracked to
+   *   an originating module.
+   * If the identifier cannot be tracked to any module dependency,
+   * either exported or imported, neither `modulePath` nor
+   * `referencePaths` will be set.
+   */
+  getOriginatingModuleDependency (document, position) {
+    const range = document.getWordRangeAtPosition(position);
+    let moduleDependency;
 
-		return undefined;
-	}
+    if (range) {
+      const astRoot = this.getParsedModule(document);
+      const identifier = findIdentifierOrLiteralWithinRange(astRoot, range);
 
-	/**
-		 * Disposes of disposable child objects.
-		 * @returns {Void} Nothing.
-		 */
-	dispose () {
-		disposeAll(this);
-	}
+      if (identifier) {
+        const dependencies = this.getModuleDependencies(document, astRoot);
+        const currentFilePath = document.fileName;
+
+        // Try matching a module path in the selected literal.
+        if (identifier.type === 'Literal') {
+          const modulePath = identifier.value;
+
+          if (modulePath && typeof modulePath === 'string') {
+            const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath);
+            return workspace.fs
+              .stat(Uri.file(filePath))
+              .then(() => ({ filePath }))
+              .catch(() => {
+                window.showWarningMessage(`"${workspace.asRelativePath(filePath, false)}" does not exist.`);
+              })
+          }
+
+          window.showErrorMessage('No string resembling a module path was selected.');
+          return;
+        }
+
+        moduleDependency = findOriginatingModuleDependency(astRoot, identifier, dependencies);
+        const modulePath = moduleDependency.modulePath;
+
+        if (modulePath) {
+          // If the identifier was tracked to o single module dependency,
+          // resolve its module path to the file path.
+          moduleDependency.filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath);
+        } else {
+          // If the identifier was not tracked to o single module dependency,
+          // expect, that it current file is its originating module.
+          const moduleExport = this.getModuleExport(document, astRoot);
+
+          if (moduleExport === moduleDependency.imported) {
+            const referencePaths = this.moduleResolver.unresolveFilePath(currentFilePath);
+
+            if (referencePaths) {
+              moduleDependency.referencePaths = referencePaths;
+              moduleDependency.filePath = currentFilePath;
+            }
+          }
+        }
+      }
+    }
+
+    return moduleDependency;
+  }
+
+  /**
+   * Disposes of disposable child objects.
+   * @returns {void} Nothing.
+   */
+  dispose () {
+    disposeAll(this);
+  }
 }
 
 module.exports = ModuleAnalyser;

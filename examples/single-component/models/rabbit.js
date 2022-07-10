@@ -6,5 +6,9 @@ define(['models/animal'], function (Animal) {
 	Rabbit.prototype = Object.create(Animal.prototype);
 	Rabbit.prototype.constructor = Rabbit;
 
+	Rabbit.prototype.squeak = function () {
+		console.log(this.name + ' squeaked.');
+	};
+
 	return Rabbit;
 });

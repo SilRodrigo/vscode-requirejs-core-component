@@ -5,7 +5,9 @@
 		"build/out": true
 	},
 	"requireModuleSupport.modulePath": ".",
+	"requireModuleSupport.configFile": "config.js",
 	"requireModuleSupport.pluginExtensions": {
 		"css": ".css"
-	}
+	},
+	"requireModuleSupport.includeFileCompletionExtensions": [".js", ".css"]
 }

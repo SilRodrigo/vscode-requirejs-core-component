@@ -1,94 +1,135 @@
-# Require Module Support README
+# RequireJS Module Support
 
-[![Build Status](https://api.travis-ci.org/anacierdem/vscode-requirejs.svg?branch=master)](https://travis-ci.org/anacierdem/vscode-requirejs)
-[![JavaScript Style Guide: Good Parts](https://img.shields.io/badge/code%20style-goodparts-brightgreen.svg?style=flat)](https://github.com/dwyl/goodparts "JavaScript The Good Parts")
-[![codecov](https://codecov.io/gh/anacierdem/vscode-requirejs/branch/master/graph/badge.svg)](https://codecov.io/gh/anacierdem/vscode-requirejs)
-[![dependencies Status](https://david-dm.org/anacierdem/vscode-requirejs/status.svg)](https://david-dm.org/anacierdem/vscode-requirejs)
-[![devDependencies Status](https://david-dm.org/anacierdem/vscode-requirejs/dev-status.svg)](https://david-dm.org/anacierdem/vscode-requirejs?type=dev)
+Looks up modules and identifiers in CJS/AMD/ES projects using RequireJS.
 
-## Features
+* Go To Definition and Find All References for imported identifiers and string literals with module names.
+* Autocomplete module names when typing.
+* Show module paths when hovering above module names.
+* Rename imported and exported symbols.
+* Support module formats CJS, AMD, UMD and ES.
+* Support modern JavaScript (ES2021).
 
-Provides goto definition functionality for require js modules.
+This project started by enhancing the extension [RequireJS Module Support], but was rewritten to use parsing and AST traversal instead of regexp string matching, when the original approach started making further improvements difficult. It might behave differently than the original extension, but it should follow the language more correctly.
 
-You can navigate to the source file from locations marked with the caret (^);
+## Installation
 
+Look for [RequireJS Module Support] in the marketplace, or [install the extension by the command line], if you have the VS Code binary in `PATH`:
+
+    code --install-extension prantlf.vscode-requirejs
+
+If you used the extension [RequireJS Module Support], uninstall it or disable it to prevent conflicts.
+
+## Navigation
+
+You can navigate to the source file from locations marked with the caret (^):
+
+    // main
     require('moduleA').foo();
-                ^       ^
+               ^       ^
 
-    require(['moduleA', 'moduleB'], function(a, b) {
-                ^           ^                ^  ^
-        var foo = a;
-             ^    ^  
-        var bar = b;
-             ^    ^
-        foo.baz();
-          ^  ^
-        bar.prop;
-         ^    ^
+    // moduleC
+    define(['moduleA', 'moduleB'], function(a, b) {
+               ^           ^                ^  ^
+      var foo = a;
+           ^    ^
+      var bar = new b();
+           ^        ^
+      foo.baz();
+       ^  ^
+      bar.prop;
+       ^    ^
     });
 
-    define('myName', ['moduleA', 'moduleB'], function(a, b) {
-                          ^  	     ^                ^  ^
-        var foo = new a();
-             ^        ^  
-        foo.bar();
-         ^   ^
+    // moduleC ESM
+    import a from 'moduleA';
+           ^          ^
+    import b from 'moduleB';
+           ^          ^
+    const foo = a;
+           ^    ^
+    const bar = b;
+           ^    ^
+    foo.baz();
+     ^   ^
+    bar.prop;
+     ^   ^
+
+    // moduleA
+    define(() => {
+      return {
+        foo: function() { ... },
+        bar: function() { ... },
+        baz: function() { ... }
+      };
     });
+
+    // moduleB
+    export default {
+      prop: 6
+    };
 
 ## Settings
 
-You can set module path relative to workspace root with 
+The following properties can be set in `settings.json` to override the default values. The names from the table below have to be prefixed with `requireModuleSupport.`, which is omitted in the table to save space. Paths in property values should be relative to the workspace root. See also the [project examples].
 
-    "requireModuleSupport.modulePath" 
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| enableDefinitionProvider | `boolean` | `true` | Enables cross-module symbol lookup in the "Go to Definition" command. |
+| enableReferenceProvider | `boolean` | `true` | Enables cross-module symbol lookup in the "Find All References" command. |
+| enableCompletionItemProvider | `boolean` | `true` | Enables selecting from the module directory content when typing "/" inside a string with a module path. |
+| enableHoverProvider | `boolean` | `true` | Enables displaying the file-system path, which the module path resolves to, when hovering with the mouse cursor above a string with a module path. |
+| enableRenameProvider | `boolean` | `true` | Enables cross-module symbol lookup in the "Rename Symbol" command. |
+| showGoToDefinitionModuleCommand | `boolean` | `true` | Shows the "Go to Definition Module" command in context menus. |
+| showRenameExportedSymbolCommand | `boolean` | `true` | Shows the "Rename Exported Symbol" command in context menus. |
+| configFile | `string` | `` | Path of the RequireJS configuration file relative to workspace root |
+| enableCjsModules | `boolean` | `false` | Parse source files as pure CommonJS modules |
+| enableJsxModules | `boolean` | `false` | Enable support for the JSX language extension |
+| enableEsModules | `boolean` | `false` | Enable detection of ES modules in addition to AMD or CJS modules |
+| moduleCacheSize | `integer` | `10000` | Maximum count of parsed modules and their dependencies kept in memory as cache to improve performance |
+| dynamicModuleCacheSize | `boolean` | `true` | Make cache sizes depend on the count of JavaScript modules in the project |
+| dynamicModuleCacheSizeExtra | `integer` | `10` | How many percent of the JavaScript module count should be reserved not to exhaust the cache so quickly |
+| includeModulePattern | `string` | `**/*.js` | File globbing pattern to find JavaScript modules in this project |
+| excludeModulePattern | `string` | `` | File globbing pattern to exclude when looking for JavaScript modules in this project |
+| cutFileCompletionExtensions | `array` | `.js,.jsx,.css,.less,.scss,.hbs,.html` | File extensions to cut, if the file name is offered in module path completion |
+| includeFileCompletionExtensions | `array` | `` | Only the specified file extensions will be included for module path completion; all will be included, if empty |
+| excludeFileCompletionExtensions | `array` | `` | The specified file extensions will not be included for module path completion |
+| modulePath | `string` | `.` | Module path relative to workspace root |
+| onlyNavigateToFile | `boolean` | `false` | When set to true, it will prevent the final search for the identifier in the landing module and instead just reference the file. |
+| pluginExtensions | `object` | `{}` | Assigns default file extensions to target module paths used with RequireJS plugins |
+| moduleProcessingBatchSize | `number` | `30` | How many documents should be opened and searched before cancelling of the operation is possible |
 
-without leading and trailing slashes.
+### Disable Functionality
 
-Example;
+If you want to omit a provider or a command registered by this extension, you can set the corresponding property to `false`: `enableDefinitionProvider`, `enableReferenceProvider`, `enableCompletionItemProvider`, `enableHoverProvider`, `enableRenameProvider`, `showGoToDefinitionModuleCommand`, `showRenameExportedSymbolCommand`.
 
-    {
-        "requireModuleSupport.modulePath": "modules"
-    }
+### Plugins and File Extensions
 
-This will translate to `[WORKSPACE_ROOT]\modules`
-
-It will default to workspace root path if not given.
-You can also use relative paths on require/define calls.
-
-Another option is;
-
-    "requireModuleSupport.onlyNavigateToFile"
-
-When set to true, it will prevent the final search in the landing module and instead just reference the file. When this feature is left as false, the constructor or property that the goto definition operation has started with will be searched in the module file.
-
-If you use a dedicated RequireJS configuration file, which specified paths to sub-components or plugins, you can load it to help the module path resolution:
-
-    "requireModuleSupport.configFile"
-
-The value of `requireModuleSupport.modulePath` will be used as `baseUrl` then.
-
-Example:
-
-    "requireModuleSupport.configFile": "config.js"
-
-This will evaluate the file `[WORKSPACE_ROOT]\config.js` with `require = requirejs`.
-
-If you use RequireJS plugins in your projects, which do not require appending file extensions to their target modules, you will need to supply these extensions too:
-
-    "requireModuleSupport.pluginExtensions"
-
-Example:
+If you use RequireJS plugins in your projects, which do not require appending file extensions to their target modules, you will need to supply these extensions too. For example:
 
     "requireModuleSupport.pluginExtensions": {
-        "css": ".css"
+      "css": ".css"
     }
 
 This will ensure, that a module reference like "css!views/panel" will be handled as "css!views/panel.css" before resolving the actual module path.
+
+If you use module path completion, you can customise what file extensions will be omitted, because the corresponding plugin does not expect an extension. For example:
+
+    "requireModuleSupport.cutFileCompletionExtensions": [
+      ".js", ".css"
+    ]
+
+### Module Format
 
 If you use pure CommonJS syntax instead of AMD in your sources (not CommonJS wrappers in `define()` statements) and then compile them together with `r.js`, which generates AMD wrappers for you, you have to set the following flag to `true`:
 
     "requireModuleSupport.enableCjsModules"
 
-The module lookup works only in AMD wrappers or in simplified CommonJS wrappers by default.
+CJS modules cannot be mixed with other module formats.
+
+The following flags can be set to `true` to enable the ES module format and the JSX syntax:
+
+    "requireModuleSupport.enableEsModules"
+    "requireModuleSupport.enableJsxModules"
 
 ### RequireJS Config Files
 
@@ -98,33 +139,81 @@ Example:
 
     // config.js
     require.config({
-        paths: {
-            ui: 'ui/src', // The "ui" component is located elsewere.
-            css: 'libraries/css' // A shortcut for the full module path.
-        }
+      paths: {
+        ui: 'ui/src',        // The "ui" component is located elsewere.
+        css: 'libraries/css' // A shortcut for the full module path.
+      }
     });
 
     // main.js
     require(['ui/views/panel'], function (Panel) {
-        const panel = new Panel();
-        document.body.appendChild(panel.el);
+      const panel = new Panel();
+      document.body.appendChild(panel.el);
     });
 
     // ui/src/views/panel.js
     define(['css!./panel'], function () {
-        function Panel () {
-            this.el = ...;
-        }
-        return Panel;
+      function Panel () {
+        this.el = ...;
+      }
+      return Panel;
     });
 
     // ui/src/views/panel.css
     .panel {
-        ...
+      ...
     }
 
-## Support
+If you specify a `requireModuleSupport.configFile`, which does not contain `baseUrl`, the value of `requireModuleSupport.modulePath` will be used as `baseUrl`.
 
-The project is maintained at: [gitHub](https://github.com/anacierdem/vscode-requirejs)
+### Performance
 
-Support me at http://patreon.com/anacierdem
+The original extension used regexp string matching, which limited the correctness of language construct recognition. This extension traverses a ESTree AST, which has to be parsed from the source files, which slows down the operation.
+
+Once parsed files are cached to avoid repetitive parsing of the same file. You can increase the default cache size for large projects:
+
+    "requireModuleSupport.enableEsModules": 50000
+
+While Go To Definition parses only the target module source, Find All References does the same for all files in the project. The static cache size may be increased to satisfy this operation and set to a little more percent to avoid fast exhaustion:
+
+    "requireModuleSupport.dynamicModuleCacheSize": true
+    "requireModuleSupport.dynamicModuleCacheSizeExtra": 5
+
+Find All References can be further optimised by specifying what files should be included and what files should be further excluded from the inclusion pattern:
+
+    "requireModuleSupport.includeModulePattern": "src/**/*.js"
+    "requireModuleSupport.excludeModulePattern": "src/vendor/**/*.js"
+
+Find All References can process a limited batch of files in parallel to prevent CPU exhaustion by analysing thousands of files in parallel:
+
+    "requireModuleSupport.excludeModulePattern": 50
+
+You can also limit files, which are suggested by the moule path autocompletion by listing either included or excluded file extensions:
+
+    "requireModuleSupport.includeFileCompletionExtensions": [".js", ".css"]
+    "requireModuleSupport.excludeFileCompletionExtensions": [".txt"]
+
+## Contributing
+
+In lieu of a formal styleguide, take care to maintain the existing coding
+style. Run `npm test` to validate your changes. Use the examples
+in the `pkg/examples` directory to check the effect of your changes.
+
+## Others
+
+Users of [TextMate] can install the [OScript Bundle]. Other editors with the syntax highlighting for OScript are based on [Scintilla], for example. [SciTE], [Geany], [Nodepad++] and [others] include a [colourful theme] for the [OScript lexer].
+
+Web pages can highlight the OScript syntax of a code example [using JavaScript].
+
+## License
+
+Copyright (c) 2020-2022 Ferdinand Prantl<br>
+Copyright (c) 2020      Ali Naci Erdem
+
+Licensed under the [MIT license].
+
+[RequireJS Module Support]: https://marketplace.visualstudio.com/items?itemName=prantlf.vscode-requirejs
+[Require Module Support]: https://marketplace.visualstudio.com/items?itemName=lici.require-js
+[project examples]: ./examples/#readme
+[install the extension by the command line]: https://code.visualstudio.com/docs/editor/command-line
+[MIT license]: ./LICENSE.md

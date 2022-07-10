@@ -6,11 +6,11 @@ These examples demonstrate how various projects that use RequireJS can be suppor
 single-component
 ----------------
 
-This project consists of modules, which are referenced by paths relative to the project root.
+This project consists of modules, which are referenced by paths relative to the workspace root.
 
     // .vscode/settings.json
     {
-        "requireModuleSupport.modulePath": "."
+      "requireModuleSupport.modulePath": "."
     }
 
 two-components
@@ -20,16 +20,16 @@ This project consists of two components, which modules are referenced by paths p
 
     // .vscode/settings.json
     {
-        "requireModuleSupport.modulePath": ".",
-        "requireModuleSupport.configFile": "config.js"
+      "requireModuleSupport.modulePath": ".",
+      "requireModuleSupport.configFile": "config.js"
     }
 
     // config.js
     require.config({
-        paths: {
-            nature: 'nature/src',
-            garden: 'garden/src'
-        }
+      paths: {
+        nature: 'nature/src',
+        garden: 'garden/src'
+      }
     });
 
 css-plugin
@@ -39,16 +39,16 @@ This project uses a RequireJS plugin, which does not need file extensions in mod
 
     // .vscode/settings.json
     {
-        "requireModuleSupport.modulePath": ".",
-        "requireModuleSupport.configFile": "config.js",
-        "requireModuleSupport.pluginExtensions": {
-            "css": ".css"
-        }
+      "requireModuleSupport.modulePath": ".",
+      "requireModuleSupport.configFile": "config.js",
+      "requireModuleSupport.pluginExtensions": {
+        "css": ".css"
+      }
     }
 
     // config.js
     require.config({
-        paths: {
-            css: 'libraries/css'
-        }
+      paths: {
+        css: 'libraries/css'
+      }
     });

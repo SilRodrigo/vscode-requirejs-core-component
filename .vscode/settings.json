@@ -3,10 +3,12 @@
 	"files.exclude": {
 		".vscode-test": true,
 		"coverage": true,
+		"doc": true,
 		"examples/**/out": true,
 		"node_modules": true
 	},
 	"search.exclude": {
 		"examples/**/libraries": true
-	}
+	},
+	"coverage-gutters.showLineCoverage": true
 }

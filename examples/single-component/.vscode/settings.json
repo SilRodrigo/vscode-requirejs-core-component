@@ -3,5 +3,6 @@
 		"libraries": true,
 		"build/out": true
 	},
-	"requireModuleSupport.modulePath": "."
+	"requireModuleSupport.modulePath": ".",
+	"requireModuleSupport.includeFileCompletionExtensions": [".js"]
 }

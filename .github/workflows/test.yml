@@ -1,0 +1,32 @@
+name: Test
+
+on:
+  push:
+    branches:
+    - master
+    - combined
+  pull_request:
+    types:
+    - opened
+    - reopened
+    - synchronize
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install
+      uses: actions/setup-node@v3
+      with:
+        node-version: "lts/*"
+    - name: Build
+      run: npm ci
+    - name: Test
+      uses: GabrielBB/xvfb-action@v1.0
+      with:
+        run: npm test
+    - name: Package
+      run: npx vsce package

@@ -1,11 +1,11 @@
 module.exports = {
-	foo: function() {
+  foo: function() {
 
-	},
-	bar: function() {
+  },
+  bar: function() {
 
-	},
-	baz: function() {
+  },
+  baz: function() {
 
-	}
+  }
 };

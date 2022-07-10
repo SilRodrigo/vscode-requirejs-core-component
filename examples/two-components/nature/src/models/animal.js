@@ -1,7 +1,13 @@
 define(function () {
-	function Animal (name) {
-		console.log(name + ' created.');
-	}
+  function Animal (name) {
+    console.log(name + ' created.');
+  }
 
-	return Animal;
+  Object.assign(Animal.prototype, {
+    die: function () {
+      console.log(this.name + ' died.');
+    }
+  });
+
+  return Animal;
 });

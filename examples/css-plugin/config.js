@@ -1,5 +1,5 @@
 require.config({
-	paths: {
-		css: 'libraries/css'
-	}
+  paths: {
+    css: 'libraries/css'
+  }
 });

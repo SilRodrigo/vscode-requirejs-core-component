@@ -1,10 +1,10 @@
 define(['css!./panel'], function (stylesheet) {
-	function Panel () {
-		const el = document.createElement('div');
+  function Panel () {
+    const el = document.createElement('div');
 
-		el.classList.add('panel');
-		this.el = el;
-	}
+    el.classList.add('panel');
+    this.el = el;
+  }
 
-	return Panel;
+  return Panel;
 });
