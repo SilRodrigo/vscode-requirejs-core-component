@@ -9,7 +9,7 @@ Looks up modules and identifiers in CJS/AMD/ES projects using RequireJS.
 * Support module formats CJS, AMD, UMD and ES.
 * Support modern JavaScript (ES2021).
 
-This project started by enhancing the extension [RequireJS Module Support], but was rewritten to use parsing and AST traversal instead of regexp string matching, when the original approach started making further improvements difficult. It might behave differently than the original extension, but it should follow the language more correctly.
+This project started by enhancing the extension [Require Module Support], but was rewritten to use parsing and AST traversal instead of regexp string matching, when the original approach started making further improvements difficult. It might behave differently than the original extension, but it should follow the language more correctly.
 
 ## Installation
 
@@ -17,7 +17,7 @@ Look for [RequireJS Module Support] in the marketplace, or [install the extensio
 
     code --install-extension prantlf.vscode-requirejs
 
-If you used the extension [RequireJS Module Support], uninstall it or disable it to prevent conflicts.
+If you used the extension [Require Module Support], uninstall it or disable it to prevent conflicts.
 
 ## Navigation
 
@@ -216,4 +216,4 @@ Licensed under the [MIT license].
 [Require Module Support]: https://marketplace.visualstudio.com/items?itemName=lici.require-js
 [project examples]: ./examples/#readme
 [install the extension by the command line]: https://code.visualstudio.com/docs/editor/command-line
-[MIT license]: ./LICENSE.md
+[MIT license]: ./LICENSE
