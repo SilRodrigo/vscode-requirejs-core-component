@@ -29,7 +29,8 @@
 		"check": "node test/runTest",
 		"cover": "c8 node test/runTest",
 		"test": "denolint && c8 node test/runTest",
-		"doc": "jsdoc -c jsdoc.json"
+		"doc": "jsdoc -c jsdoc.json",
+		"version": "npx conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md"
 	},
 	"tehanu": {
 		"autostart": false,
