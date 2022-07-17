@@ -228,5 +228,115 @@
         }
       }
     }
+  },
+  {
+    "name": "original property \"bar\"",
+    "source": {
+      "position": {
+        "line": 7,
+        "character": 6
+      }
+    },
+    "target": {
+      "file": "esmA.js",
+      "range": {
+        "start": {
+          "line": 4,
+          "character": 4
+        },
+        "end": {
+          "line": 4,
+          "character": 7
+        }
+      }
+    }
+  },
+  {
+    "name": "renamed property \"bar2\"",
+    "source": {
+      "position": {
+        "line": 7,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "esmA.js",
+      "range": {
+        "start": {
+          "line": 4,
+          "character": 4
+        },
+        "end": {
+          "line": 4,
+          "character": 7
+        }
+      }
+    }
+  },
+  {
+    "name": "destructured property \"prop\"",
+    "source": {
+      "position": {
+        "line": 8,
+        "character": 6
+      }
+    },
+    "target": {
+      "file": "esmB.js",
+      "range": {
+        "start": {
+          "line": 1,
+          "character": 4
+        },
+        "end": {
+          "line": 1,
+          "character": 8
+        }
+      }
+    }
+  },
+  {
+    "name": "variable \"bar2\" alone",
+    "source": {
+      "position": {
+        "line": 9,
+        "character": 1
+      }
+    },
+    "target": {
+      "file": "esmA.js",
+      "range": {
+        "start": {
+          "line": 4,
+          "character": 4
+        },
+        "end": {
+          "line": 4,
+          "character": 7
+        }
+      }
+    }
+  },
+  {
+    "name": "variable \"prop\" alone",
+    "source": {
+      "position": {
+        "line": 10,
+        "character": 1
+      }
+    },
+    "target": {
+      "file": "esmB.js",
+      "range": {
+        "start": {
+          "line": 1,
+          "character": 4
+        },
+        "end": {
+          "line": 1,
+          "character": 8
+        }
+      }
+    }
   }
 ]

@@ -126,17 +126,40 @@ function findModuleExport (astRoot) {
 function getVariableAssignments (astRoot, stopNode) {
   const assignments = {};
 
-  function handleAssignment (leftNodeName, rightNode) {
-    if (rightNode) {
-      if (rightNode.type === 'Identifier') {
-        // Support assignment "... = imported;"
-        assignments[leftNodeName] = rightNode.name;
-      } else if (rightNode.type === 'NewExpression') {
-        // Support assignment "... = new Imported;"
-        const callee = rightNode.callee;
+  function getAssignmentValue (node) {
+    if (node) {
+      // Support assignment "... = imported;"
+      if (node.type === 'Identifier') return node.name;
+      // Support assignment "... = new Imported;"
+      if (node.type === 'NewExpression') {
+        const callee = node.callee;
+        if (callee && callee.type === 'Identifier') return callee.name;
+      }
+    }
+  }
 
-        if (callee && callee.type === 'Identifier') {
-          assignments[leftNodeName] = callee.name;
+  function handleAssignment (leftNodeName, rightNode) {
+    const rightValue = getAssignmentValue(rightNode);
+    if (rightValue) {
+      assignments[leftNodeName] = { local: rightValue };
+    }
+  }
+
+  function handleSpread (leftNodes, rightNode) {
+    const rightValue = getAssignmentValue(rightNode);
+    if (rightValue) {
+      for (const { key, value } of leftNodes) {
+        if (key.type === 'Identifier') {
+          const { type } = value;
+          if (type === 'Identifier') {
+            // Support assignment "{ local } = imported;"
+            assignments[value.name] = { property: key.name, local: rightValue };
+          } else if (type === 'AssignmentPattern') {
+            // Support assignment "{ local = ... } = imported;"
+            if (value.left && value.left.type === 'Identifier') {
+              assignments[value.left.name] = { property: key.name, local: rightValue };
+            }
+          }
         }
       }
     }
@@ -146,16 +169,28 @@ function getVariableAssignments (astRoot, stopNode) {
     walk(astRoot, {
       VariableDeclarator(node) {
         if (node === stopNode) throw 0;
-        // Support declaration "var local = imported;"
-        if (node.id && node.id.type === 'Identifier' && node.init) {
-          handleAssignment(node.id.name, node.init);
+        if (node.id && node.init) {
+          const { type } = node.id;
+          if (type === 'Identifier') {
+            // Support declaration "var local = imported;"
+            handleAssignment(node.id.name, node.init);
+          } else if (type === 'ObjectPattern') {
+            // Support declaration "var { local } = imported;"
+            handleSpread(node.id.properties, node.init);
+          }
         }
       },
       AssignmentExpression(node) {
         if (node === stopNode) throw 0;
-        // Support assignment "local = imported;"
-        if (node.left && node.left.type === 'Identifier' && node.right) {
-          handleAssignment(node.left.name, node.right);
+        if (node.left && node.right) {
+          const { type } = node.left;
+          // Support assignment "local = imported;"
+          if (type === 'Identifier') {
+            handleAssignment(node.left.name, node.right);
+          } else if (type === 'ObjectPattern') {
+            // Support declaration "var { local } = imported;"
+            handleSpread(node.left.properties, node.right);
+          }
         }
       }
     }, node => {
@@ -255,6 +290,21 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
           imported = '.';
         }
       }
+    } else if (object.type === 'ObjectPattern') {
+      const declarator = object.parent;
+
+      if (declarator) {
+        const type = declarator.type;
+
+        if (type === 'VariableDeclarator') {
+          // Recognize "member" in a "{member: ...} = object" expression.
+          const { init } = declarator;
+
+          if (init) {
+            detectTargetObject(init);
+          }
+        }
+      }
     }
   }
 
@@ -284,8 +334,7 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
         }
       }
     } else if (parentType === 'Property' && parent.computed === false) {
-      const key = parent.property;
-      const value = parent.property;
+      const { key, value } = parent;
 
       if (key && key.name === selected && value) {
         const object = parent.parent;
@@ -310,26 +359,22 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
   function searchForModuleDependencyInVariables () {
     const assignments = getVariableAssignments(astRoot, identifier);
 
-    for (;;) {
-      // Lookup the last track of the dependency in the list of all
-      // variables.
-      const declared = assignments[imported];
-
-      if (!declared) {
-        break;
-      }
+    // Lookup the last track of the dependency in the list of all
+    // variables.
+    for (let declared = assignments[imported], original = declared; declared;
+         isMember = false, declared = assignments[imported]) {
       // Prevent endless loop, if the code is invalid and contains
       // a declaration with the variable and the expression the other
       // way round.
       delete assignments[imported];
-      imported = declared;
+      imported = declared.local;
 
       modulePath = moduleDependencies[imported];
       if (modulePath) {
         // If the real import was just renamed by a declaration, use
         // its parameter name to look it up in the originating module.
         if (!isMember) {
-          selected = imported;
+          selected = original.property || imported;
         }
         break;
       }
