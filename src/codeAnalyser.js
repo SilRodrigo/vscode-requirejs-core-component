@@ -369,12 +369,18 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
       delete assignments[imported];
       imported = declared.local;
 
-      modulePath = moduleDependencies[imported];
-      if (modulePath) {
-        // If the real import was just renamed by a declaration, use
-        // its parameter name to look it up in the originating module.
-        if (!isMember) {
-          selected = original.property || imported;
+      const dependency = moduleDependencies[imported];
+      if (dependency) {
+        modulePath = dependency.source;
+        const { property } = dependency;
+        if (property) {
+          selected = property;
+        } else {
+          // If the real import was just renamed by a declaration, use
+          // its parameter name to look it up in the originating module.
+          if (!isMember) {
+            selected = original.property || imported;
+          }
         }
         break;
       }
@@ -393,7 +399,10 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
   // Unless the module has been inferred from the CJS syntax, look it up from
   // the declared dependency list.
   if (!modulePath) {
-    modulePath = moduleDependencies[imported];
+    const dependency = moduleDependencies[imported];
+    if (dependency) {
+      modulePath = dependency.source;
+    }
   }
 
   // If the identifier is missing among the formal parameters, it may be

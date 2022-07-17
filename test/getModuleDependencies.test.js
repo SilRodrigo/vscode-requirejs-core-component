@@ -4,15 +4,15 @@ const ModuleAnalyser = require('../src/moduleAnalyser');
 const { parseModule } = require('../src/codeParser');
 const moduleAnalyser = new ModuleAnalyser();
 
-function parseTest(input) {
-  return parseModule(input, { loc: true });
+function parseTest(input, options = {}) {
+  return parseModule(input, { loc: true, ...options });
 }
 
 test('should return object with module path and name', () => {
   const input = 'define([\'./path/to/a\', \'./path/to/b\'], function (moduleA, moduleB) {});';
   const expected = {
-    moduleA: './path/to/a',
-    moduleB: './path/to/b'
+    moduleA: { source: './path/to/a' },
+    moduleB: { source: './path/to/b' }
   };
 
   assert.deepEqual(moduleAnalyser.getModuleDependencies({
@@ -27,8 +27,8 @@ test('should return object with module path and name for multiline define', () =
       'moduleB'
     ], function(a, b) {});`;
   const expected = {
-    a: 'moduleA',
-    b: 'moduleB'
+    a: { source: 'moduleA' },
+    b: { source: 'moduleB' }
   };
 
   assert.deepEqual(moduleAnalyser.getModuleDependencies({
@@ -43,8 +43,8 @@ test('should return object with module path and name for multiline require', () 
       'moduleB'
     ], function(a, b) {});`;
   const expected = {
-    a: 'moduleA',
-    b: 'moduleB'
+    a: { source: 'moduleA' },
+    b: { source: 'moduleB' }
   };
 
   assert.deepEqual(moduleAnalyser.getModuleDependencies({
@@ -56,12 +56,72 @@ test('should return object with module path and name for multiline require', () 
 test('should return object with module path and name for named module', () => {
   const input = 'define(\'myName\', [\'moduleA\', \'moduleB\'], function(a, b) {});';
   const expected = {
-    a: 'moduleA',
-    b: 'moduleB'
+    a: { source: 'moduleA' },
+    b: { source: 'moduleB' }
   };
 
   assert.deepEqual(moduleAnalyser.getModuleDependencies({
     fileName: '4',
     version: 1
   }, parseTest(input)), expected);
+});
+
+test('should return object with destructured parameters', () => {
+  const input = 'define([\'moduleA\'], function({ foo }) {});';
+  const expected = {
+    foo: { property: 'foo', source: 'moduleA' }
+  };
+
+  assert.deepEqual(moduleAnalyser.getModuleDependencies({
+    fileName: '5',
+    version: 1
+  }, parseTest(input)), expected);
+});
+
+test('should return object with destructured renamed parameters', () => {
+  const input = 'define([\'moduleA\'], function({ foo: bar }) {});';
+  const expected = {
+    bar: { property: 'foo', source: 'moduleA' }
+  };
+
+  assert.deepEqual(moduleAnalyser.getModuleDependencies({
+    fileName: '6',
+    version: 1
+  }, parseTest(input)), expected);
+});
+
+test('should return object with an esm module and default imports', () => {
+  const input = 'import a from \'moduleA\';';
+  const expected = {
+    a: { source: 'moduleA' }
+  };
+
+  assert.deepEqual(moduleAnalyser.getModuleDependencies({
+    fileName: '7',
+    version: 1
+  }, parseTest(input, { module: true })), expected);
+});
+
+test('should return object with an esm module and named imports', () => {
+  const input = 'import { foo } from \'moduleA\';';
+  const expected = {
+    foo: { property: 'foo', source: 'moduleA' }
+  };
+
+  assert.deepEqual(moduleAnalyser.getModuleDependencies({
+    fileName: '8',
+    version: 1
+  }, parseTest(input, { module: true })), expected);
+});
+
+test('should return object with an esm module and renamed imports', () => {
+  const input = 'import { foo as bar } from \'moduleA\';';
+  const expected = {
+    bar: { property: 'foo', source: 'moduleA' }
+  };
+
+  assert.deepEqual(moduleAnalyser.getModuleDependencies({
+    fileName: '9',
+    version: 1
+  }, parseTest(input, { module: true })), expected);
 });

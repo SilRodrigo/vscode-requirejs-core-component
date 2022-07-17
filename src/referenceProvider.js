@@ -90,14 +90,15 @@ class ReferenceProvider {
       // Find the dependency on the originating module; the first one is enough.
       // As soon as it is found, find all occurrences of the identifier there.
       Object.keys(moduleDependencies).some(formalParameter => {
-        if (modulePaths.indexOf(moduleDependencies[formalParameter]) >= 0) {
+        const { property, source } = moduleDependencies[formalParameter];
+        if (modulePaths.indexOf(source) >= 0) {
           // If the identifier belongs to a member, look it up as-is.
           // If it denotes an object, which meant a dependent module
           // export in the module, where the search was started, look
           // up the same object in the current module, which means
           // searching for the formal parameter pointing to the same
           // module.
-          ranges = findAllIdentifiers(astRoot,
+          ranges = findAllIdentifiers(astRoot, property ||
             isMember ? identifier : formalParameter, isMember);
 
           return true;

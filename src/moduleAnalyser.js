@@ -100,7 +100,7 @@ class ModuleAnalyser {
         // Create a map {formal parameter -> module path} from
         // the two arrays with keys and vales.
         namedDependencies = params.reduce((result, param, index) => {
-          result[param] = modules[index];
+          result[param] = { source: modules[index] };
           return result;
         }, {});
         unnamedDependencies = modules.slice(params.length);
@@ -116,7 +116,26 @@ class ModuleAnalyser {
               if (param.type === 'Identifier') {
                 const dep = depNodes[index];
                 if (dep && dep.type === 'Literal') {
-                  result[param.name] = dep.value;
+                  result[param.name] = { source: dep.value };
+                }
+              } else if (param.type === 'ObjectPattern') {
+                const dep = depNodes[index];
+                if (dep && dep.type === 'Literal') {
+                  const source = dep.value;
+                  for (const { key, value } of param.properties) {
+                    if (key.type === 'Identifier') {
+                      const { type } = value;
+                      if (type === 'Identifier') {
+                        // Support parameter "{ local }"
+                        result[value.name] = { property: key.name, source };
+                      } else if (type === 'AssignmentPattern') {
+                        // Support parameter "{ local = ... }"
+                        if (value.left && value.left.type === 'Identifier') {
+                          result[value.left.name] = { property: key.name, local: rightValue };
+                        }
+                      }
+                    }
+                  }
                 }
               }
               return result;
@@ -143,9 +162,14 @@ class ModuleAnalyser {
               if (source.type === 'Literal') {
                 if (local) {
                   if (local.type === 'Identifier') {
-                    namedDependencies[local.name] = source.value;
+                    namedDependencies[local.name] = { source: source.value };
                   }
-                } else if (!specifiers) {
+                } else if (specifiers) {
+                  const { value } = source;
+                  for (const { imported, local } of specifiers) {
+                    namedDependencies[local.name] = { property: imported.name, source: value };
+                  }
+                } else {
                   unnamedDependencies.push(source.value);
                 }
               }
@@ -162,7 +186,7 @@ class ModuleAnalyser {
           } else {
             const { params, modules } = findDependencies(astRoot);
             namedDependencies = params.reduce((result, param, index) => {
-              result[param] = modules[index];
+              result[param] = { source: modules[index] };
               return result;
             }, {});
             unnamedDependencies = modules.slice(params.length);
@@ -188,11 +212,7 @@ class ModuleAnalyser {
    * to module paths, were their value came from.
    */
   getModuleDependencies (document, astRoot) {
-    try {
-      return this.getAnalysedModule(document, astRoot).namedDependencies;
-    } catch (err) {
-      console.log(err);
-    }
+    return this.getAnalysedModule(document, astRoot).namedDependencies;
   }
 
   /**
@@ -205,11 +225,7 @@ class ModuleAnalyser {
    * @returns {string} The name of the exported object identifier.
    */
   getModuleExport (document, astRoot) {
-    try {
-      return this.getAnalysedModule(document, astRoot).exports.default;
-    } catch (err) {
-      console.log(err);
-    }
+    return this.getAnalysedModule(document, astRoot).exports.default;
   }
 
   /**
