@@ -1,3 +1,13 @@
+## [1.0.2](https://github.com/prantlf/vscode-requirejs/compare/v1.0.1...v1.0.2) (2022-07-17)
+
+
+### Bug Fixes
+
+* Recognise identifiers in object destructuring ([2532bed](https://github.com/prantlf/vscode-requirejs/commit/2532bed6a8f9c4bd86c104138eee410f331c1ef1))
+* Support named imports ([5f7c2a2](https://github.com/prantlf/vscode-requirejs/commit/5f7c2a29904faf1b53c7c02082e8c6fe73011535))
+
+
+
 ## 1.0.1
 
 Fix extension title and logo.
