@@ -30,7 +30,7 @@ This project consists of two components, which modules are referenced by paths p
         nature: 'nature/src',
         garden: 'garden/src'
       }
-    });
+    })
 
 multi-root
 ----------
@@ -44,13 +44,13 @@ This project consists of the same two components as [two-components](#two-compon
         { "path": "nature" }
       ],
       "settings:" {
-      	"files.exclude": {
-      		"libraries": true,
-      		"*/build/out": true
-      	},
-      	"requireModuleSupport.modulePath": ".",
-      	"requireModuleSupport.configFile": "config.js",
-      	"requireModuleSupport.includeFileCompletionExtensions": [".js"]
+        "files.exclude": {
+          "libraries": true,
+          "*/build/out": true
+        },
+        "requireModuleSupport.modulePath": ".",
+        "requireModuleSupport.configFile": "config.js",
+        "requireModuleSupport.includeFileCompletionExtensions": [".js"]
       }
     }
 
@@ -60,7 +60,7 @@ This project consists of the same two components as [two-components](#two-compon
         nature: 'nature/src',
         garden: 'garden/src'
       }
-    });
+    })
 
 css-plugin
 ----------
@@ -81,4 +81,4 @@ This project uses a RequireJS plugin, which does not need file extensions in mod
       paths: {
         css: 'libraries/css'
       }
-    });
+    })

@@ -3,18 +3,18 @@
  * @namespace extension
  */
 
-const { commands, languages, workspace } = require('vscode');
-const StatusNotifier = require('./statusNotifier');
-const ModuleResolver = require('./moduleResolver');
-const ModuleAnalyser = require('./moduleAnalyser');
-const FolderCrawler = require('./folderCrawler');
-const DefinitionProvider = require('./definitionProvider');
-const ReferenceProvider = require('./referenceProvider');
-const CompletionItemProvider = require('./completionItemProvider');
-const HoverProvider = require('./hoverProvider');
-const RenameProvider = require('./renameProvider');
-const goToDefinitionModule = require('./goToDefinitionModule');
-const renameExportedSymbol = require('./renameExportedSymbol');
+const { commands, languages, workspace } = require('vscode')
+const StatusNotifier = require('./statusNotifier')
+const ModuleResolver = require('./moduleResolver')
+const ModuleAnalyser = require('./moduleAnalyser')
+const FolderCrawler = require('./folderCrawler')
+const DefinitionProvider = require('./definitionProvider')
+const ReferenceProvider = require('./referenceProvider')
+const CompletionItemProvider = require('./completionItemProvider')
+const HoverProvider = require('./hoverProvider')
+const RenameProvider = require('./renameProvider')
+const goToDefinitionModule = require('./goToDefinitionModule')
+const renameExportedSymbol = require('./renameExportedSymbol')
 
 /**
  * Sets a context flag, which can be used to enable or disable menu items.
@@ -27,7 +27,7 @@ const renameExportedSymbol = require('./renameExportedSymbol');
  */
 function setContextFlag (name, value) {
   return commands.executeCommand('setContext',
-    'requireModuleSupport:' + name, value);
+    'requireModuleSupport:' + name, value)
 }
 
 /**
@@ -44,7 +44,7 @@ function setContextFlag (name, value) {
 function configureContextFlag (name) {
   return setContextFlag(name, workspace
     .getConfiguration('requireModuleSupport')
-    .get(name));
+    .get(name))
 }
 
 /**
@@ -60,32 +60,32 @@ function configureContextFlag (name) {
  * @inner
  */
 function configureProvider (context, name, subscriber) {
-  const flagName = 'enable' + name;
+  const flagName = 'enable' + name
   const enable = workspace
     .getConfiguration('requireModuleSupport')
-    .get(flagName);
-  const subscriptions = context.subscriptions;
-  const registrations = context.registrations;
-  const registration = registrations[name];
+    .get(flagName)
+  const subscriptions = context.subscriptions
+  const registrations = context.registrations
+  const registration = registrations[name]
 
   if (enable) {
     if (!registration) {
-      const subscription = subscriber();
+      const subscription = subscriber()
 
-      registrations[name] = subscription;
-      subscriptions.push(subscription);
+      registrations[name] = subscription
+      subscriptions.push(subscription)
 
-      return setContextFlag(flagName, true);
+      return setContextFlag(flagName, true)
     }
   /* c8 ignore next 6 */
   } else if (registration) {
-    registrations[name] = undefined;
-    registration.dispose();
+    registrations[name] = undefined
+    registration.dispose()
 
-    return setContextFlag(flagName, false);
+    return setContextFlag(flagName, false)
   }
 
-  return undefined;
+  return undefined
 }
 
 /**
@@ -103,39 +103,39 @@ function configureExtension (context) {
     completionItemProvider,
     hoverProvider,
     renameProvider
-  } = context.providers;
+  } = context.providers
   const language = [
     { scheme: 'file', language: 'javascript' },
     { scheme: 'file', language: 'javascriptreact' }
-  ];
+  ]
 
   configureProvider(context, 'DefinitionProvider', () =>
     languages.registerDefinitionProvider(
-      language, definitionProvider));
+      language, definitionProvider))
   configureProvider(context, 'ReferenceProvider', () =>
     languages.registerReferenceProvider(
-      language, referenceProvider));
+      language, referenceProvider))
   configureProvider(context, 'CompletionItemProvider', () =>
     languages.registerCompletionItemProvider(
-      language, completionItemProvider, '/'));
+      language, completionItemProvider, '/'))
   configureProvider(context, 'HoverProvider', () =>
     languages.registerHoverProvider(
-      language, hoverProvider));
+      language, hoverProvider))
   configureProvider(context, 'RenameProvider', () =>
     languages.registerRenameProvider(
-      language, renameProvider));
+      language, renameProvider))
 
   // Allow enabling or disabling or menu items or keyboard bindings.
-  configureContextFlag('showGoToDefinitionModuleCommand');
-  configureContextFlag('showRenameExportedSymbolCommand');
+  configureContextFlag('showGoToDefinitionModuleCommand')
+  configureContextFlag('showRenameExportedSymbolCommand')
 
   // Update cache size
-  const { moduleAnalyser } = definitionProvider || referenceProvider || {};
+  const { moduleAnalyser } = definitionProvider || referenceProvider || {}
   if (moduleAnalyser) {
     const moduleCacheSize = workspace
       .getConfiguration('requireModuleSupport')
-      .get('moduleCacheSize') || 10000;
-    moduleAnalyser.adaptCacheSizes(moduleCacheSize);
+      .get('moduleCacheSize') || 10000
+    moduleAnalyser.adaptCacheSizes(moduleCacheSize)
   }
 }
 
@@ -148,17 +148,17 @@ module.exports = {
    * @memberof extension
    */
   activate (context) {
-    const subscriptions = context.subscriptions;
-    const statusNotifier = new StatusNotifier();
-    const moduleResolver = new ModuleResolver();
-    const moduleAnalyser = new ModuleAnalyser(moduleResolver);
-    const folderCrawler = new FolderCrawler(statusNotifier);
-    const definitionProvider = new DefinitionProvider(moduleAnalyser);
-    const referenceProvider = new ReferenceProvider(moduleAnalyser, statusNotifier);
-    const completionItemProvider = new CompletionItemProvider(moduleResolver, folderCrawler);
-    const hoverProvider = new HoverProvider(moduleResolver);
-    const renameProvider = new RenameProvider(referenceProvider);
-    const configurationContext = { subscriptions: subscriptions };
+    const subscriptions = context.subscriptions
+    const statusNotifier = new StatusNotifier()
+    const moduleResolver = new ModuleResolver()
+    const moduleAnalyser = new ModuleAnalyser(moduleResolver)
+    const folderCrawler = new FolderCrawler(statusNotifier)
+    const definitionProvider = new DefinitionProvider(moduleAnalyser)
+    const referenceProvider = new ReferenceProvider(moduleAnalyser, statusNotifier)
+    const completionItemProvider = new CompletionItemProvider(moduleResolver, folderCrawler)
+    const hoverProvider = new HoverProvider(moduleResolver)
+    const renameProvider = new RenameProvider(referenceProvider)
+    const configurationContext = { subscriptions: subscriptions }
 
     configurationContext.providers = {
       definitionProvider: definitionProvider,
@@ -166,12 +166,12 @@ module.exports = {
       completionItemProvider: completionItemProvider,
       hoverProvider: hoverProvider,
       renameProvider: renameProvider
-    };
+    }
 
     const configurationChange = workspace.onDidChangeConfiguration(() =>
-      configureExtension(configurationContext));
+      configureExtension(configurationContext))
 
-    configurationContext.registrations = { configurationChange: configurationChange };
+    configurationContext.registrations = { configurationChange: configurationChange }
 
     subscriptions.push(
       statusNotifier, moduleResolver, moduleAnalyser, folderCrawler,
@@ -184,8 +184,8 @@ module.exports = {
         goToDefinitionModule.bind(null, definitionProvider)),
       commands.registerTextEditorCommand(
         'requireModuleSupport.renameExportedSymbol',
-        renameExportedSymbol.bind(null, renameProvider)));
+        renameExportedSymbol.bind(null, renameProvider)))
 
-    configureExtension(configurationContext);
+    configureExtension(configurationContext)
   }
-};
+}

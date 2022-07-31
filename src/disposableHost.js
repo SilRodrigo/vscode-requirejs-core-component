@@ -12,9 +12,9 @@
  */
 function addDisposable (owner, disposable) {
   if (!owner.disposables) {
-    owner.disposables = [];
+    owner.disposables = []
   }
-  owner.disposables.push(disposable);
+  owner.disposables.push(disposable)
 }
 
 /**
@@ -30,12 +30,12 @@ function addDisposable (owner, disposable) {
  */
 function hostOrCreateDisposable (owner, name, Type, instance) {
   if (instance) {
-    owner[name] = instance;
+    owner[name] = instance
   } else {
-    const disposable = new Type();
+    const disposable = new Type()
 
-    owner[name] = disposable;
-    addDisposable(disposable);
+    owner[name] = disposable
+    addDisposable(disposable)
   }
 }
 
@@ -47,10 +47,10 @@ function hostOrCreateDisposable (owner, name, Type, instance) {
  */
 function disposeAll (owner) {
   if (owner.disposables) {
-    let disposable;
+    let disposable
 
     while ((disposable = owner.disposables.pop())) {
-      disposable.dispose();
+      disposable.dispose()
     }
   }
 }
@@ -59,4 +59,4 @@ module.exports = {
   addDisposable: addDisposable,
   hostOrCreateDisposable: hostOrCreateDisposable,
   disposeAll: disposeAll
-};
+}

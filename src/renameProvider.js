@@ -1,6 +1,6 @@
-const { WorkspaceEdit } = require('vscode');
-const ReferenceProvider = require('./referenceProvider');
-const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
+const { WorkspaceEdit } = require('vscode')
+const ReferenceProvider = require('./referenceProvider')
+const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 
 /**
  * Provides support for renaming identifiers, of either objects or member
@@ -12,7 +12,7 @@ class RenameProvider {
    * @param {ReferenceProvider} referenceProvider Provider looking up all identifier references.
    */
   constructor (referenceProvider) {
-    hostOrCreateDisposable(this, 'referenceProvider', ReferenceProvider, referenceProvider);
+    hostOrCreateDisposable(this, 'referenceProvider', ReferenceProvider, referenceProvider)
   }
 
   /**
@@ -26,16 +26,16 @@ class RenameProvider {
   provideRenameEdits (document, position, newName, cancellationToken) {
     return this.referenceProvider.provideReferences(document, position, {}, cancellationToken)
       .then(references => {
-        let edit;
+        let edit
 
         if (references) {
-          edit = new WorkspaceEdit();
+          edit = new WorkspaceEdit()
           references.forEach(reference =>
-            edit.replace(reference.uri, reference.range, newName));
+            edit.replace(reference.uri, reference.range, newName))
         }
 
-        return edit;
-      });
+        return edit
+      })
   }
 
   /**
@@ -43,8 +43,8 @@ class RenameProvider {
    * @returns {void} Nothing.
    */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = RenameProvider;
+module.exports = RenameProvider

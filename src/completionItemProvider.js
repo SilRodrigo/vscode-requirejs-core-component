@@ -1,10 +1,10 @@
-const { CompletionItem, CompletionItemKind, workspace } = require('vscode');
-const CompletionItemFileKind = CompletionItemKind.File;
-const ModuleResolver = require('./moduleResolver');
-const FolderCrawler = require('./folderCrawler');
-const {  isInsideString, startsLikeModulePath, getModulePathUpToPosition } = require('./modulePath');
-const { basename, extname } = require('path');
-const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
+const { CompletionItem, CompletionItemKind, workspace } = require('vscode')
+const CompletionItemFileKind = CompletionItemKind.File
+const ModuleResolver = require('./moduleResolver')
+const FolderCrawler = require('./folderCrawler')
+const {  isInsideString, startsLikeModulePath, getModulePathUpToPosition } = require('./modulePath')
+const { basename, extname } = require('path')
+const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 
 /**
  * Creates completion items for file-system nodes.
@@ -15,41 +15,41 @@ const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
 function createCompletionItems (items) {
   const cutExtensions = workspace
     .getConfiguration('requireModuleSupport')
-    .get('cutFileCompletionExtensions');
+    .get('cutFileCompletionExtensions')
   const result = items.map(file => {
-    const name = file.name;
-    const completion = new CompletionItem(name);
+    const name = file.name
+    const completion = new CompletionItem(name)
 
     if (file.directory) {
-      completion.insertText = name;
-      completion.label += '/';
+      completion.insertText = name
+      completion.label += '/'
       // Make the directory completion start another child completion.
       completion.command = {
         command: 'default:type',
         title: 'triggerSuggest',
         arguments: [{ text: '/' }]
-      };
+      }
       // Show directories before files.
-      completion.sortText = 'd';
+      completion.sortText = 'd'
     } else {
       // Remove the extension of files, if needed.
       if (cutExtensions.some(extension => name.endsWith(extension))) {
-        completion.insertText = basename(name, extname(name));
+        completion.insertText = basename(name, extname(name))
       } else {
-        completion.insertText = name;
+        completion.insertText = name
       }
       // Show files after directories.
-      completion.sortText = 'f';
+      completion.sortText = 'f'
     }
-    completion.kind = CompletionItemFileKind;
+    completion.kind = CompletionItemFileKind
 
-    return completion;
-  });
+    return completion
+  })
 
   // Add the parent directory to the completion list.
-  result.unshift(new CompletionItem('..'));
+  result.unshift(new CompletionItem('..'))
 
-  return Promise.resolve(result);
+  return Promise.resolve(result)
 }
 
 /**
@@ -64,8 +64,8 @@ class CompletionItemProvider {
    * @param {FolderCrawler} folderCrawler Folder checker and enumerator.
    */
   constructor (moduleResolver, folderCrawler) {
-    hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver);
-    hostOrCreateDisposable(this, 'folderCrawler', FolderCrawler, folderCrawler);
+    hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver)
+    hostOrCreateDisposable(this, 'folderCrawler', FolderCrawler, folderCrawler)
   }
 
   /**
@@ -76,44 +76,44 @@ class CompletionItemProvider {
    * @returns {Promise} Resolves with an array of file completion items.
    */
   provideCompletionItems (document, position, cancellationToken) {
-    const statusNotifier = this.folderCrawler.statusNotifier;
-    const currentLine = document.getText(document.lineAt(position).range);
-    const currentCharacter = position.character;
+    const statusNotifier = this.folderCrawler.statusNotifier
+    const currentLine = document.getText(document.lineAt(position).range)
+    const currentCharacter = position.character
 
     // Module paths can be only within string literals.
     if (!isInsideString(currentLine, currentCharacter)) {
-      return Promise.resolve([]);
+      return Promise.resolve([])
     }
 
     // Extract the absolute file paths path from the string on the current
     // position, which appears to contain a module path.
     const folderPath = this.getFocusedFolderPath(document.fileName,
-      currentLine, currentCharacter);
+      currentLine, currentCharacter)
 
     if (!folderPath) {
-      return Promise.resolve([]);
+      return Promise.resolve([])
     }
-    statusNotifier.show();
+    statusNotifier.show()
 
     // Offer the child modules for directories only.
     return this.folderCrawler.checkDirectory(folderPath)
       .then(() => {
         return this.folderCrawler.listFolderChildren(folderPath, cancellationToken)
           .then(items => this.folderCrawler.inspectFileItems(items, cancellationToken))
-          .then(items => createCompletionItems(items));
+          .then(items => createCompletionItems(items))
       }, () => [])
       .then(items => {
         statusNotifier.notify('check', items.length + ' items found.',
-          'File and directory inspection finished. ' + items.length + ' completion items found.');
-        statusNotifier.hide();
+          'File and directory inspection finished. ' + items.length + ' completion items found.')
+        statusNotifier.hide()
 
-        return items;
+        return items
       }, error => {
         statusNotifier.notify('alert', 'Items unavailable.',
-          'File and directory inspection failed: ' + error.message);
-        statusNotifier.hide();
-        throw error;
-      });
+          'File and directory inspection failed: ' + error.message)
+        statusNotifier.hide()
+        throw error
+      })
   }
 
   /**
@@ -124,22 +124,22 @@ class CompletionItemProvider {
    * @returns {string} The file-system path or `undefined`, if the string cannot be interpreted as a module path.
    */
   getFocusedFolderPath (currentFilePath, currentLine, currentPosition) {
-    let userPath = getModulePathUpToPosition(currentLine, currentPosition);
-    const pluginSeparator = userPath.indexOf('!');
+    let userPath = getModulePathUpToPosition(currentLine, currentPosition)
+    const pluginSeparator = userPath.indexOf('!')
 
     // Do not let the plugin add the plugin-specific file extension.
     if (pluginSeparator > 0) {
-      userPath = userPath.substr(pluginSeparator + 1);
+      userPath = userPath.substr(pluginSeparator + 1)
     }
     if (!startsLikeModulePath(userPath)) {
-      return undefined;
+      return undefined
     }
 
-    const filePath = this.moduleResolver.resolveModulePath(userPath, currentFilePath);
+    const filePath = this.moduleResolver.resolveModulePath(userPath, currentFilePath)
 
     // Without a plugin, every resolved path is handled as a JavaScript
     // module and gets the extension ".js" appended.
-    return filePath.substr(0, filePath.length - 3);
+    return filePath.substr(0, filePath.length - 3)
   }
 
   /**
@@ -147,8 +147,8 @@ class CompletionItemProvider {
    * @returns {void} Nothing.
    */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = CompletionItemProvider;
+module.exports = CompletionItemProvider

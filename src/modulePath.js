@@ -12,29 +12,29 @@
  * @memberof modulePath
  */
 function isInsideString (currentLine, currentPosition) {
-  let singleQuotes = false;
-  let doubleQuotes = false;
-  let backticks = false;
-  let previousChar;
+  let singleQuotes = false
+  let doubleQuotes = false
+  let backticks = false
+  let previousChar
 
   // Check if we are inside quotes.
   for (let i = 0; i < currentPosition; ++i) {
-    const currentChar = currentLine.charAt(i);
+    const currentChar = currentLine.charAt(i)
 
     // Skip escaped characters.
     if (previousChar !== '\\') {
       if (currentChar === '\'') {
-        singleQuotes = !singleQuotes;
+        singleQuotes = !singleQuotes
       } else if (currentChar === '"') {
-        doubleQuotes = !doubleQuotes;
+        doubleQuotes = !doubleQuotes
       } else if (currentChar === '`') {
-        backticks = !backticks;
+        backticks = !backticks
       }
     }
-    previousChar = currentChar;
+    previousChar = currentChar
   }
 
-  return singleQuotes || doubleQuotes || backticks;
+  return singleQuotes || doubleQuotes || backticks
 }
 
 /**
@@ -47,7 +47,7 @@ function isInsideString (currentLine, currentPosition) {
 function canStartModuleName (character) {
   return character >= '0' && character <= '9'
     || character >= 'A' && character <= 'Z'
-    || character >= 'a' && character <= 'z';
+    || character >= 'a' && character <= 'z'
 }
 
 /**
@@ -58,10 +58,10 @@ function canStartModuleName (character) {
  */
 function startsLikeModulePath (apparentPath) {
   if (apparentPath.startsWith('./') || apparentPath.startsWith('../')) {
-    return true;
+    return true
   }
 
-  return canStartModuleName(apparentPath.charAt(0));
+  return canStartModuleName(apparentPath.charAt(0))
 }
 
 /**
@@ -72,7 +72,7 @@ function startsLikeModulePath (apparentPath) {
  * @inner
  */
 function isQuote (character) {
-  return character === '\'' || character === '"' || character === '`';
+  return character === '\'' || character === '"' || character === '`'
 }
 
 /**
@@ -84,26 +84,26 @@ function isQuote (character) {
  * @memberof modulePath
  */
 function getModulePathUpToPosition (currentLine, currentPosition) {
-  let lastQuote = -1;
-  let lastWhiteSpace = -1;
+  let lastQuote = -1
+  let lastWhiteSpace = -1
 
   // Find the last quote on the line, which starts a string.
   for (let i = 0; i < currentPosition; ++i) {
-    const currentChar = currentLine[i];
+    const currentChar = currentLine[i]
 
     if (currentChar === '\\') {
       // Skip the next character if escaped.
-      ++i;
+      ++i
     } else if (currentChar === ' ' || currentChar === '\t') {
-      lastWhiteSpace = i;
+      lastWhiteSpace = i
     } else if (isQuote(currentChar)) {
-      lastQuote = i;
+      lastQuote = i
     }
   }
 
   // Cut the content after the last quote found on the line.
   return currentLine.substring(
-    (lastQuote >= 0 ? lastQuote : lastWhiteSpace) + 1, currentPosition);
+    (lastQuote >= 0 ? lastQuote : lastWhiteSpace) + 1, currentPosition)
 }
 
 /**
@@ -115,40 +115,40 @@ function getModulePathUpToPosition (currentLine, currentPosition) {
  * @memberof modulePath
  */
 function getSurroundingModulePath (currentLine, currentPosition) {
-  const lineLength = currentLine.length;
-  let leadingQuote = -1;
-  let trailingQuote = -1;
-  let i;
+  const lineLength = currentLine.length
+  let leadingQuote = -1
+  let trailingQuote = -1
+  let i
 
   // Find the nearest quote on the line before the cursor.
   for (i = currentPosition; i > 0; --i) {
-    const currentChar = currentLine[i];
-    const precedingChar = currentLine[i - 1];
+    const currentChar = currentLine[i]
+    const precedingChar = currentLine[i - 1]
 
     if (precedingChar === '\\') {
       // Move to the preceding character if escaped.
-      --i;
+      --i
     } else if (isQuote(currentChar)) {
-      leadingQuote = i;
-      break;
+      leadingQuote = i
+      break
     }
   }
 
   // Find the nearest quote on the line after the cursor.
   for (i = currentPosition; i < lineLength; ++i) {
-    const currentChar = currentLine[i];
+    const currentChar = currentLine[i]
 
     if (currentChar === '\\') {
       // Skip the next character if escaped.
-      ++i;
+      ++i
     } else if (isQuote(currentChar)) {
-      trailingQuote = i;
-      break;
+      trailingQuote = i
+      break
     }
   }
 
   // Cut the content between the quotes surrounding the cursoron the line.
-  return currentLine.substring(leadingQuote + 1, trailingQuote);
+  return currentLine.substring(leadingQuote + 1, trailingQuote)
 }
 
 module.exports = {
@@ -156,4 +156,4 @@ module.exports = {
   startsLikeModulePath: startsLikeModulePath,
   getModulePathUpToPosition: getModulePathUpToPosition,
   getSurroundingModulePath: getSurroundingModulePath
-};
+}

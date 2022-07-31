@@ -1,7 +1,7 @@
-const { workspace, Uri, Location, Range, Position } = require('vscode');
-const { findIdentifier } = require('./codeParser');
-const ModuleAnalyser = require('./moduleAnalyser');
-const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
+const { workspace, Uri, Location, Range, Position } = require('vscode')
+const { findIdentifier } = require('./codeParser')
+const ModuleAnalyser = require('./moduleAnalyser')
+const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 
 /**
  * Provides the location of the definition of a selected identifier, if it is
@@ -13,7 +13,7 @@ class DefinitionProvider {
    * @param {ModuleAnalyser} moduleAnalyser Caching module analysis helper.
    */
   constructor (moduleAnalyser) {
-    hostOrCreateDisposable(this, 'moduleAnalyser', ModuleAnalyser, moduleAnalyser);
+    hostOrCreateDisposable(this, 'moduleAnalyser', ModuleAnalyser, moduleAnalyser)
   }
 
   /**
@@ -23,31 +23,31 @@ class DefinitionProvider {
    * @returns {Promise} Resolves with a file location
    */
   searchModule (filePath, searchFor) {
-    const newUri = Uri.file(filePath);
-    const newDocument = workspace.openTextDocument(newUri);
+    const newUri = Uri.file(filePath)
+    const newDocument = workspace.openTextDocument(newUri)
 
     return newDocument.then(document => {
       const onlyNavigateToFile = workspace
         .getConfiguration('requireModuleSupport')
-        .get('onlyNavigateToFile');
+        .get('onlyNavigateToFile')
 
       // Some modules are source for RequireJS plugins and need not be written in JavaScript.
       if (!onlyNavigateToFile && searchFor &&
           (document.languageId === 'javascript' || document.languageId === 'javascriptreact')) {
-        const astRoot = this.moduleAnalyser.getParsedModule(document);
-        const range = findIdentifier(astRoot, searchFor);
+        const astRoot = this.moduleAnalyser.getParsedModule(document)
+        const range = findIdentifier(astRoot, searchFor)
 
         if (range) {
           return new Location(newUri, new Range(
             // Range is zero-based, esprima is one-based
             new Position(range.start.line - 1, range.start.column),
             new Position(range.end.line - 1, range.end.column)
-          ));
+          ))
         }
       }
 
-      return new Location(newUri, new Position(0, 0));
-    });
+      return new Location(newUri, new Position(0, 0))
+    })
   }
 
   /**
@@ -57,16 +57,16 @@ class DefinitionProvider {
    * @returns {Promise} Resolves with a file location.
    */
   async provideDefinition (document, position) {
-    const moduleDependency = await this.moduleAnalyser.getOriginatingModuleDependency(document, position);
+    const moduleDependency = await this.moduleAnalyser.getOriginatingModuleDependency(document, position)
 
     // If the selected identifier cannot be tracked to other module,
     // let the built-in definition lookup handle it. The symbol definition
     // can be found, only if its originating module could be found.
     if (moduleDependency) {
-      const filePath = moduleDependency.filePath;
+      const filePath = moduleDependency.filePath
 
       if (filePath) {
-        return this.searchModule(filePath, moduleDependency.selected);
+        return this.searchModule(filePath, moduleDependency.selected)
       }
     }
   }
@@ -76,8 +76,8 @@ class DefinitionProvider {
    * @returns {void} Nothing.
    */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = DefinitionProvider;
+module.exports = DefinitionProvider

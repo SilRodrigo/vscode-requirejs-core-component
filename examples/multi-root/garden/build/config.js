@@ -3,4 +3,4 @@ require.config({
     nature: 'empty:',
     garden: 'src'
   }
-});
+})

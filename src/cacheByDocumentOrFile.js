@@ -1,6 +1,6 @@
-const { workspace } = require('vscode');
-const LRU = require('lru-cache');
-const { addDisposable, disposeAll } = require('./disposableHost');
+const { workspace } = require('vscode')
+const LRU = require('lru-cache')
+const { addDisposable, disposeAll } = require('./disposableHost')
 
 /**
  * Maintains a cache for object related to documents or files. If the
@@ -13,9 +13,9 @@ class CacheByDocumentOrFile {
    * Initializes a new instance.
    */
   constructor () {
-    this.configure();
+    this.configure()
     addDisposable(workspace.onDidChangeConfiguration(
-      () => this.configure()));
+      () => this.configure()))
   }
 
   /**
@@ -25,12 +25,12 @@ class CacheByDocumentOrFile {
   configure () {
     const moduleCacheSize = workspace
       .getConfiguration('requireModuleSupport')
-      .get('moduleCacheSize') || 10000;
+      .get('moduleCacheSize') || 10000
 
     if (this.cache) {
-      this.adaptCacheSize(moduleCacheSize);
+      this.adaptCacheSize(moduleCacheSize)
     } else {
-      this.cache = new LRU({ max: moduleCacheSize });
+      this.cache = new LRU({ max: moduleCacheSize })
     }
   }
 
@@ -42,7 +42,7 @@ class CacheByDocumentOrFile {
    */
   adaptCacheSize (maximumCount) {
     if (this.cache.max < maximumCount) {
-      this.cache.max = maximumCount;
+      this.cache.max = maximumCount
     }
   }
 
@@ -55,9 +55,9 @@ class CacheByDocumentOrFile {
    * @returns {Object} The cached object or null.
    */
   getCachedObject (document) {
-    const isDocument = document.fileName;
-    const fileName = isDocument || document.path;
-    const cacheEntry = this.cache.get(fileName);
+    const isDocument = document.fileName
+    const fileName = isDocument || document.path
+    const cacheEntry = this.cache.get(fileName)
 
     if (cacheEntry) {
       // Recognize a cache entry stored by file information.
@@ -67,9 +67,9 @@ class CacheByDocumentOrFile {
         // Otherwise check the last modification time of the file.
         if (isDocument
           || cacheEntry.mtime !== document.mtime) {
-          this.cache.delete(fileName);
+          this.cache.delete(fileName)
         } else {
-          return cacheEntry.object;
+          return cacheEntry.object
         }
       } else if (isDocument
           && cacheEntry.version !== document.version) {
@@ -77,13 +77,13 @@ class CacheByDocumentOrFile {
         // and it is requested by a file information, return it
         // always. Documents are kept up-to-date with the files.
         // Otherwise check the document versions.
-        this.cache.delete(fileName);
+        this.cache.delete(fileName)
       } else {
-        return cacheEntry.object;
+        return cacheEntry.object
       }
     }
 
-    return null;
+    return null
   }
 
   /**
@@ -95,19 +95,19 @@ class CacheByDocumentOrFile {
    * @returns {void} Nothing.
    */
   setCachedObject (document, object) {
-    const isDocument = document.fileName;
-    const fileName = isDocument || document.path;
-    const cacheEntry = { object: object };
+    const isDocument = document.fileName
+    const fileName = isDocument || document.path
+    const cacheEntry = { object: object }
 
     if (isDocument) {
       // The version property changes with every document modification.
-      cacheEntry.version = document.version;
+      cacheEntry.version = document.version
     } else {
       // As long as there has been no document opened, use the last
       // modification time of the file.
-      cacheEntry.mtime = document.mtime;
+      cacheEntry.mtime = document.mtime
     }
-    this.cache.set(fileName, cacheEntry);
+    this.cache.set(fileName, cacheEntry)
   }
 
   /**
@@ -115,8 +115,8 @@ class CacheByDocumentOrFile {
    * @returns {void} Nothing.
    */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = CacheByDocumentOrFile;
+module.exports = CacheByDocumentOrFile

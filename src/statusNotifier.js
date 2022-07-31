@@ -1,4 +1,4 @@
-const { window } = require('vscode');
+const { window } = require('vscode')
 
 /**
  * Places an item with an icon and a short text to the status bar of the VS
@@ -10,7 +10,7 @@ class StatusNotifier {
    * Initializes a new instance.
    */
   constructor () {
-    this.statusBarItem = window.createStatusBarItem();
+    this.statusBarItem = window.createStatusBarItem()
   }
 
   /**
@@ -19,10 +19,10 @@ class StatusNotifier {
    */
   show () {
     if (this.timeout) {
-      clearTimeout(this.timeout);
-      this.timeout = undefined;
+      clearTimeout(this.timeout)
+      this.timeout = undefined
     }
-    this.statusBarItem.show();
+    this.statusBarItem.show()
   }
 
   /**
@@ -31,9 +31,9 @@ class StatusNotifier {
    */
   hide () {
     this.timeout = setTimeout(() => {
-      this.statusBarItem.hide();
-      this.timeout = undefined;
-    }, 3000);
+      this.statusBarItem.hide()
+      this.timeout = undefined
+    }, 3000)
   }
 
   /**
@@ -44,8 +44,8 @@ class StatusNotifier {
    * @returns {void} Nothing.
    */
   notify (icon, summary, details) {
-    this.statusBarItem.text = '$(' + icon + ') ' + summary;
-    this.statusBarItem.tooltip = details;
+    this.statusBarItem.text = '$(' + icon + ') ' + summary
+    this.statusBarItem.tooltip = details
   }
 
   /**
@@ -53,8 +53,8 @@ class StatusNotifier {
    * @returns {void} Nothing.
    */
   dispose () {
-    this.statusBarItem.dispose();
+    this.statusBarItem.dispose()
   }
 }
 
-module.exports = StatusNotifier;
+module.exports = StatusNotifier

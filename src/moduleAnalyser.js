@@ -1,15 +1,15 @@
-const { workspace, window, Uri } = require('vscode');
+const { workspace, window, Uri } = require('vscode')
 const { findDependencies, findCjsDependencies }
-= require('@prantlf/amodro-trace/parse');
+= require('@prantlf/amodro-trace/parse')
 const { detectDefinesOrRequires, detectImportsAndExports }
-  = require('requirejs-esm/dist/api');
+  = require('requirejs-esm/dist/api')
 const { parseModule, findIdentifierOrLiteralWithinRange }
-  = require('./codeParser');
+  = require('./codeParser')
 const { findModuleExport, findBodyReturn, findOriginatingModuleDependency }
-  = require('./codeAnalyser');
-const ModuleResolver = require('./moduleResolver');
-const CacheByDocumentOrFile = require('./cacheByDocumentOrFile');
-const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
+  = require('./codeAnalyser')
+const ModuleResolver = require('./moduleResolver')
+const CacheByDocumentOrFile = require('./cacheByDocumentOrFile')
+const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 
 /**
  * Analyses JavaScript files to find out, if they are RequireJS modules
@@ -24,9 +24,9 @@ class ModuleAnalyser {
    * @param {ModuleResolver} moduleResolver Module to file path resolution helper.
    */
   constructor (moduleResolver) {
-    hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver);
-    hostOrCreateDisposable(this, 'parsedCache', CacheByDocumentOrFile);
-    hostOrCreateDisposable(this, 'analysedCache', CacheByDocumentOrFile);
+    hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver)
+    hostOrCreateDisposable(this, 'parsedCache', CacheByDocumentOrFile)
+    hostOrCreateDisposable(this, 'analysedCache', CacheByDocumentOrFile)
   }
 
   /**
@@ -36,8 +36,8 @@ class ModuleAnalyser {
    * @returns {Void} Nothing.
    */
   adaptCacheSizes (moduleCount) {
-    this.parsedCache.adaptCacheSize(moduleCount);
-    this.analysedCache.adaptCacheSize(moduleCount);
+    this.parsedCache.adaptCacheSize(moduleCount)
+    this.analysedCache.adaptCacheSize(moduleCount)
   }
 
   /**
@@ -46,32 +46,32 @@ class ModuleAnalyser {
    * @returns {Object} JavaScript AST
    */
   getParsedModule (document /*, documentPath*/) {
-    let astRoot = this.parsedCache.getCachedObject(document);
+    let astRoot = this.parsedCache.getCachedObject(document)
 
     if (!astRoot) {
       const supportJsx = !!process.env.VSCODE_REQUIREJS_SUPPORT_JSX || workspace
         .getConfiguration('requireModuleSupport')
-        .get('enableJsxModules');
+        .get('enableJsxModules')
       const supportEsm = !!process.env.VSCODE_REQUIREJS_SUPPORT_ESM || workspace
         .getConfiguration('requireModuleSupport')
-        .get('enableEsModules');
+        .get('enableEsModules')
       try {
         // Support getting content from both documents and files.
-        // const message = `Parsing "${workspace.asRelativePath(documentPath || document.fileName, false)}"`;
-        // console.time(message);
+        // const message = `Parsing "${workspace.asRelativePath(documentPath || document.fileName, false)}"`
+        // console.time(message)
         astRoot = parseModule(document.getText && document.getText()
-          || document.content || '', { loc: true, jsx: supportJsx, module: supportEsm });
-        // console.timeEnd(message);
+          || document.content || '', { loc: true, jsx: supportJsx, module: supportEsm })
+        // console.timeEnd(message)
       } catch (error) {
         console.warn('Parsing "' // eslint-disable-line no-console
           + (document.fileName || document.path)
-          + '" failed:', error);
-        astRoot = {};
+          + '" failed:', error)
+        astRoot = {}
       }
-      this.parsedCache.setCachedObject(document, astRoot);
+      this.parsedCache.setCachedObject(document, astRoot)
     }
 
-    return astRoot;
+    return astRoot
   }
 
   /**
@@ -86,120 +86,120 @@ class ModuleAnalyser {
    * pointing to the name of the local variable, which is exported.
    */
   getAnalysedModule (document, astRoot) {
-    let analysis = this.analysedCache.getCachedObject(document);
+    let analysis = this.analysedCache.getCachedObject(document)
 
     if (!analysis) {
-      let namedDependencies, unnamedDependencies, moduleExports;
+      let namedDependencies, unnamedDependencies, moduleExports
 
       // Pure CommonJS syntax needs a different lookup method.
       const enableCjsModules = workspace
         .getConfiguration('requireModuleSupport')
-        .get('enableCjsModules');
+        .get('enableCjsModules')
       if (enableCjsModules) {
-        const { params, modules } = findCjsDependencies(astRoot);
+        const { params, modules } = findCjsDependencies(astRoot)
         // Create a map {formal parameter -> module path} from
         // the two arrays with keys and vales.
         namedDependencies = params.reduce((result, param, index) => {
-          result[param] = { source: modules[index] };
-          return result;
-        }, {});
-        unnamedDependencies = modules.slice(params.length);
-        moduleExports = { default: findModuleExport(astRoot) };
+          result[param] = { source: modules[index] }
+          return result
+        }, {})
+        unnamedDependencies = modules.slice(params.length)
+        moduleExports = { default: findModuleExport(astRoot) }
       } else {
         const amds = detectDefinesOrRequires(astRoot)
         if (amds.length) {
-          const { deps, params, factory, body } = amds[0];
-          const { body: block = {} } = factory || body || {};
+          const { deps, params, factory, body } = amds[0]
+          const { body: block = {} } = factory || body || {}
           if (deps) {
-            const depNodes = deps.elements || [];
+            const depNodes = deps.elements || []
             namedDependencies = params.reduce((result, param, index) => {
               if (param.type === 'Identifier') {
-                const dep = depNodes[index];
+                const dep = depNodes[index]
                 if (dep && dep.type === 'Literal') {
-                  result[param.name] = { source: dep.value };
+                  result[param.name] = { source: dep.value }
                 }
               } else if (param.type === 'ObjectPattern') {
-                const dep = depNodes[index];
+                const dep = depNodes[index]
                 if (dep && dep.type === 'Literal') {
-                  const source = dep.value;
+                  const source = dep.value
                   for (const { key, value } of param.properties) {
                     if (key.type === 'Identifier') {
-                      const { type } = value;
+                      const { type } = value
                       if (type === 'Identifier') {
                         // Support parameter "{ local }"
-                        result[value.name] = { property: key.name, source };
+                        result[value.name] = { property: key.name, source }
                       } else if (type === 'AssignmentPattern') {
                         // Support parameter "{ local = ... }"
                         if (value.left && value.left.type === 'Identifier') {
-                          result[value.left.name] = { property: key.name, local: rightValue };
+                          result[value.left.name] = { property: key.name, local: rightValue }
                         }
                       }
                     }
                   }
                 }
               }
-              return result;
-            }, {});
+              return result
+            }, {})
             unnamedDependencies = depNodes
               .slice(params.length)
               .reduce((result, dep) => {
                 if (dep.type === 'Literal') {
-                  result.push(dep.value);
+                  result.push(dep.value)
                 }
-                return result;
-              }, []);
+                return result
+              }, [])
           } else {
-            namedDependencies = {};
-            unnamedDependencies = [];
+            namedDependencies = {}
+            unnamedDependencies = []
           }
-          moduleExports = { default: findBodyReturn(block) };
+          moduleExports = { default: findBodyReturn(block) }
         } else {
-          const { imports, exports } = detectImportsAndExports(astRoot);
+          const { imports, exports } = detectImportsAndExports(astRoot)
           if (imports.length || exports.length) {
-            namedDependencies = {};
-            unnamedDependencies = [];
+            namedDependencies = {}
+            unnamedDependencies = []
             for (const { source, local, specifiers } of imports) {
               if (source.type === 'Literal') {
                 if (local) {
                   if (local.type === 'Identifier') {
-                    namedDependencies[local.name] = { source: source.value };
+                    namedDependencies[local.name] = { source: source.value }
                   }
                 } else if (specifiers) {
-                  const { value } = source;
+                  const { value } = source
                   for (const { imported, local } of specifiers) {
-                    namedDependencies[local.name] = { property: imported.name, source: value };
+                    namedDependencies[local.name] = { property: imported.name, source: value }
                   }
                 } else {
-                  unnamedDependencies.push(source.value);
+                  unnamedDependencies.push(source.value)
                 }
               }
             }
-            moduleExports = {};
+            moduleExports = {}
             for (const { node, default: alone } of exports) {
               if (alone) {
-                const { declaration } = node;
+                const { declaration } = node
                 if (declaration.type === 'Identifier') {
-                  moduleExports.default = declaration.name;
+                  moduleExports.default = declaration.name
                 }
               }
             }
           } else {
-            const { params, modules } = findDependencies(astRoot);
+            const { params, modules } = findDependencies(astRoot)
             namedDependencies = params.reduce((result, param, index) => {
-              result[param] = { source: modules[index] };
-              return result;
-            }, {});
-            unnamedDependencies = modules.slice(params.length);
-            moduleExports = { default: findModuleExport(astRoot) };
+              result[param] = { source: modules[index] }
+              return result
+            }, {})
+            unnamedDependencies = modules.slice(params.length)
+            moduleExports = { default: findModuleExport(astRoot) }
           }
         }
       }
 
-      analysis = { namedDependencies, unnamedDependencies, exports: moduleExports };
-      this.analysedCache.setCachedObject(document, analysis);
+      analysis = { namedDependencies, unnamedDependencies, exports: moduleExports }
+      this.analysedCache.setCachedObject(document, analysis)
     }
 
-    return analysis;
+    return analysis
   }
 
   /**
@@ -212,7 +212,7 @@ class ModuleAnalyser {
    * to module paths, were their value came from.
    */
   getModuleDependencies (document, astRoot) {
-    return this.getAnalysedModule(document, astRoot).namedDependencies;
+    return this.getAnalysedModule(document, astRoot).namedDependencies
   }
 
   /**
@@ -225,7 +225,7 @@ class ModuleAnalyser {
    * @returns {string} The name of the exported object identifier.
    */
   getModuleExport (document, astRoot) {
-    return this.getAnalysedModule(document, astRoot).exports.default;
+    return this.getAnalysedModule(document, astRoot).exports.default
   }
 
   /**
@@ -255,60 +255,60 @@ class ModuleAnalyser {
    * `referencePaths` will be set.
    */
   getOriginatingModuleDependency (document, position) {
-    const range = document.getWordRangeAtPosition(position);
-    let moduleDependency;
+    const range = document.getWordRangeAtPosition(position)
+    let moduleDependency
 
     if (range) {
-      const astRoot = this.getParsedModule(document);
-      const identifier = findIdentifierOrLiteralWithinRange(astRoot, range);
+      const astRoot = this.getParsedModule(document)
+      const identifier = findIdentifierOrLiteralWithinRange(astRoot, range)
 
       if (identifier) {
-        const dependencies = this.getModuleDependencies(document, astRoot);
-        const currentFilePath = document.fileName;
+        const dependencies = this.getModuleDependencies(document, astRoot)
+        const currentFilePath = document.fileName
 
         // Try matching a module path in the selected literal.
         if (identifier.type === 'Literal') {
-          const modulePath = identifier.value;
+          const modulePath = identifier.value
 
           if (modulePath && typeof modulePath === 'string') {
-            const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath);
+            const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath)
             return workspace.fs
               .stat(Uri.file(filePath))
               .then(() => ({ filePath }))
               .catch(() => {
-                window.showWarningMessage(`"${workspace.asRelativePath(filePath, false)}" does not exist.`);
+                window.showWarningMessage(`"${workspace.asRelativePath(filePath, false)}" does not exist.`)
               })
           }
 
-          window.showErrorMessage('No string resembling a module path was selected.');
-          return;
+          window.showErrorMessage('No string resembling a module path was selected.')
+          return
         }
 
-        moduleDependency = findOriginatingModuleDependency(astRoot, identifier, dependencies);
-        const modulePath = moduleDependency.modulePath;
+        moduleDependency = findOriginatingModuleDependency(astRoot, identifier, dependencies)
+        const modulePath = moduleDependency.modulePath
 
         if (modulePath) {
           // If the identifier was tracked to o single module dependency,
           // resolve its module path to the file path.
-          moduleDependency.filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath);
+          moduleDependency.filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath)
         } else {
           // If the identifier was not tracked to o single module dependency,
           // expect, that it current file is its originating module.
-          const moduleExport = this.getModuleExport(document, astRoot);
+          const moduleExport = this.getModuleExport(document, astRoot)
 
           if (moduleExport === moduleDependency.imported) {
-            const referencePaths = this.moduleResolver.unresolveFilePath(currentFilePath);
+            const referencePaths = this.moduleResolver.unresolveFilePath(currentFilePath)
 
             if (referencePaths) {
-              moduleDependency.referencePaths = referencePaths;
-              moduleDependency.filePath = currentFilePath;
+              moduleDependency.referencePaths = referencePaths
+              moduleDependency.filePath = currentFilePath
             }
           }
         }
       }
     }
 
-    return moduleDependency;
+    return moduleDependency
   }
 
   /**
@@ -316,8 +316,8 @@ class ModuleAnalyser {
    * @returns {void} Nothing.
    */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = ModuleAnalyser;
+module.exports = ModuleAnalyser

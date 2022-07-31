@@ -1,1 +1,1 @@
-require('moduleA').foo();
+require('moduleA').foo()

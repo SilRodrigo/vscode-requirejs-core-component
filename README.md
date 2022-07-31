@@ -24,34 +24,34 @@ If you used the extension [Require Module Support], uninstall it or disable it t
 You can navigate to the source file from locations marked with the caret (^):
 
     // main
-    require('moduleA').foo();
+    require('moduleA').foo()
                ^       ^
 
     // moduleC
     define(['moduleA', 'moduleB'], function(a, b) {
                ^           ^                ^  ^
-      var foo = a;
+      var foo = a
            ^    ^
-      var bar = new b();
+      var bar = new b()
            ^        ^
-      foo.baz();
+      foo.baz()
        ^  ^
-      bar.prop;
+      bar.prop
        ^    ^
-    });
+    })
 
     // moduleC ESM
-    import a from 'moduleA';
+    import a from 'moduleA'
            ^          ^
-    import b from 'moduleB';
+    import b from 'moduleB'
            ^          ^
-    const foo = a;
+    const foo = a
            ^    ^
-    const bar = b;
+    const bar = b
            ^    ^
-    foo.baz();
+    foo.baz()
      ^   ^
-    bar.prop;
+    bar.prop
      ^   ^
 
     // moduleA
@@ -60,13 +60,13 @@ You can navigate to the source file from locations marked with the caret (^):
         foo: function() { ... },
         bar: function() { ... },
         baz: function() { ... }
-      };
-    });
+      }
+    })
 
     // moduleB
     export default {
       prop: 6
-    };
+    }
 
 ## Settings
 
@@ -143,21 +143,21 @@ Example:
         ui: 'ui/src',        // The "ui" component is located elsewere.
         css: 'libraries/css' // A shortcut for the full module path.
       }
-    });
+    })
 
     // main.js
     require(['ui/views/panel'], function (Panel) {
-      const panel = new Panel();
-      document.body.appendChild(panel.el);
-    });
+      const panel = new Panel()
+      document.body.appendChild(panel.el)
+    })
 
     // ui/src/views/panel.js
     define(['css!./panel'], function () {
       function Panel () {
-        this.el = ...;
+        this.el = ...
       }
-      return Panel;
-    });
+      return Panel
+    })
 
     // ui/src/views/panel.css
     .panel {

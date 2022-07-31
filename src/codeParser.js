@@ -2,8 +2,8 @@
  * Parses JavaScript sources to an AST and searches the AST for identifiers.
  * @namespace codeParser
  */
-const { parse } = require('meriyah');
-const { walk, walkAtPosition } = require('estree-walkie');
+const { parse } = require('meriyah')
+const { walk, walkAtPosition } = require('estree-walkie')
 
 /**
  * Parses the input JavaScript text and returns a AST of it. Expects a
@@ -23,7 +23,7 @@ function parseModule (content, options = {}) {
     ranges: options.ranges || options.range,
     loc: options.loc,
     jsx: options.jsx
-  });
+  })
 }
 
 /**
@@ -39,18 +39,18 @@ function parseModule (content, options = {}) {
  * @memberof codeParser
  */
 function findAllIdentifiers (astRoot, identifier, isMember, allowObjectProperties) {
-  const locations = [];
+  const locations = []
 
   // Detect an "object.member" expression.
   function isMemberParent (node, parent) {
     return parent && parent.type === 'MemberExpression'
-      && parent.computed === false && parent.property === node;
+      && parent.computed === false && parent.property === node
   }
 
   // Detect an "{member: ...}" expression.
   function isObjectPropertyParent (_node, parent) {
     return parent && parent.type === 'Property'
-      && parent.computed === false && parent.kind === 'init';
+      && parent.computed === false && parent.kind === 'init'
   }
 
   walk(astRoot, {
@@ -59,13 +59,13 @@ function findAllIdentifiers (astRoot, identifier, isMember, allowObjectPropertie
         ? isMemberParent(node, parent) || allowObjectProperties && isObjectPropertyParent(node, parent)
         : !(isMemberParent(node, parent) || isObjectPropertyParent(node, parent))
       )) {
-        const loc = node.loc;
-        if (loc) locations.push(loc);
+        const loc = node.loc
+        if (loc) locations.push(loc)
       }
     }
-  });
+  })
 
-  return locations;
+  return locations
 }
 
 /**
@@ -77,22 +77,22 @@ function findAllIdentifiers (astRoot, identifier, isMember, allowObjectPropertie
  * @memberof codeParser
  */
 function findIdentifier (astRoot, identifier) {
-  let loc;
+  let loc
 
   try {
     walk(astRoot, {
       Identifier(node) {
         if (node.name === identifier) {
-          loc = node.loc;
-          throw 0;
+          loc = node.loc
+          throw 0
         }
       }
-    });
+    })
   } catch (err) {
-    if (typeof err !== 'number') throw err;
+    if (typeof err !== 'number') throw err
   }
 
-  return loc;
+  return loc
 }
 
 /**
@@ -107,9 +107,9 @@ function findIdentifier (astRoot, identifier) {
  */
 function findIdentifierOrLiteralWithinRange (astRoot, range) {
   // vscode.Range is zero-based, esprima's range is one-based
-  const line = range.start.line + 1;
-  const column = range.start.character;
-  let currentNode;
+  const line = range.start.line + 1
+  const column = range.start.character
+  let currentNode
 
   try {
     walkAtPosition(astRoot, line, column, {
@@ -117,27 +117,27 @@ function findIdentifierOrLiteralWithinRange (astRoot, range) {
       Identifier(node, _state, parent) {
         // Remember parent nodes down to the identifier, which it finds,
         // to be able to better analyze the code later.
-        node.parent = parent;
-        currentNode = node;
+        node.parent = parent
+        currentNode = node
         // Stop traversing, if we passed the line with the caret selection.
-        throw 0;
+        throw 0
       },
       // The selected range has to be an identifier to be valid for "Go to Definition".
       Literal(node, _state, parent) {
-        node.parent = parent;
-        currentNode = node;
-        throw 0;
+        node.parent = parent
+        currentNode = node
+        throw 0
       }
     }, (node, _state, parent) => {
-      node.parent = parent;
-    });
+      node.parent = parent
+    })
   } catch (err) {
-    if (typeof err !== 'number') throw err;
+    if (typeof err !== 'number') throw err
   }
 
-  return currentNode;
+  return currentNode
 }
 
 module.exports = {
   findAllIdentifiers, findIdentifier, findIdentifierOrLiteralWithinRange, parseModule
-};
+}

@@ -1,9 +1,9 @@
-const { workspace } = require('vscode');
-const amodroConfig = require('@prantlf/amodro-trace/config');
-const { addDisposable, disposeAll } = require('./disposableHost');
-const { readFileSync } = require('fs');
-const { normalize, join, dirname, extname } = require('path');
-const requirejs = require('@prantlf/requirejs');
+const { workspace } = require('vscode')
+const amodroConfig = require('@prantlf/amodro-trace/config')
+const { addDisposable, disposeAll } = require('./disposableHost')
+const { readFileSync } = require('fs')
+const { normalize, join, dirname, extname } = require('path')
+const requirejs = require('@prantlf/requirejs')
 
 /**
  * Resolves RequireJS module paths, which are used in `define` and
@@ -18,8 +18,8 @@ class ModuleResolver {
    * Initializes a new instance.
    */
   constructor () {
-    this.configure();
-    addDisposable(workspace.onDidChangeConfiguration(() => this.configure()));
+    this.configure()
+    addDisposable(workspace.onDidChangeConfiguration(() => this.configure()))
   }
 
   /**
@@ -27,67 +27,67 @@ class ModuleResolver {
    * @returns {void} Nothing.
    */
   configure () {
-    const requireModuleSupport = workspace.getConfiguration('requireModuleSupport');
+    const requireModuleSupport = workspace.getConfiguration('requireModuleSupport')
 
-    let rootPath;
+    let rootPath
     if (workspace.workspaceFile) {
       if (workspace.workspaceFile.scheme !== 'untitled') {
-        rootPath = dirname(workspace.workspaceFile.fsPath);
+        rootPath = dirname(workspace.workspaceFile.fsPath)
       }
     } else if (workspace.workspaceFolders) {
-      rootPath = workspace.workspaceFolders[0].uri.fsPath;
+      rootPath = workspace.workspaceFolders[0].uri.fsPath
     }
     if (!rootPath) {
-      rootPath = process.env.VSCODE_REQUIREJS_WORKSPACE;
+      rootPath = process.env.VSCODE_REQUIREJS_WORKSPACE
     }
 
     // Clean up requirejs configuration from the previously activated context.
     // See https://github.com/requirejs/requirejs/issues/1113 for more information.
-    delete requirejs.s.contexts._;
+    delete requirejs.s.contexts._
 
-    const config = {};
+    const config = {}
 
     if (rootPath) {
       // Handle the existing modulePath property as baseUrl for require.config()
       // to support simple scenarios. More complex projects should supply also
       // configFile in addition to baseUrl to resolve any module path.
-      config.baseUrl = join(rootPath, requireModuleSupport.get('modulePath'));
+      config.baseUrl = join(rootPath, requireModuleSupport.get('modulePath'))
 
       // Reuse the configuration for debugging a requirejs project for editing too.
       // Prevent maintaining the same configuration in settings.json.
-      const configFile = requireModuleSupport.get('configFile');
+      const configFile = requireModuleSupport.get('configFile')
 
       if (configFile) {
-        const configPath = join(rootPath, configFile);
-        let configObject;
+        const configPath = join(rootPath, configFile)
+        let configObject
         try {
-          const configContent = readFileSync(configPath, 'utf-8');
-          configObject = amodroConfig.find(configContent);
+          const configContent = readFileSync(configPath, 'utf-8')
+          configObject = amodroConfig.find(configContent)
         } catch (error) {
-          console.error(error);
-          return window.showErrorMessage(`Loading "${workspace.asRelativePath(configPath, false)}" failed.`);
+          console.error(error)
+          return window.showErrorMessage(`Loading "${workspace.asRelativePath(configPath, false)}" failed.`)
         }
 
         if (configObject) {
-          Object.assign(config, configObject);
+          Object.assign(config, configObject)
         }
 
         if (!this.fileSystemWatcher) {
-          this.fileSystemWatcher = workspace.createFileSystemWatcher(configPath);
-          addDisposable(this.fileSystemWatcher);
-          addDisposable(this.fileSystemWatcher.onDidChange(() => this.configure()));
-          addDisposable(this.fileSystemWatcher.onDidCreate(() => this.configure()));
-          addDisposable(this.fileSystemWatcher.onDidDelete(() => this.configure()));
+          this.fileSystemWatcher = workspace.createFileSystemWatcher(configPath)
+          addDisposable(this.fileSystemWatcher)
+          addDisposable(this.fileSystemWatcher.onDidChange(() => this.configure()))
+          addDisposable(this.fileSystemWatcher.onDidCreate(() => this.configure()))
+          addDisposable(this.fileSystemWatcher.onDidDelete(() => this.configure()))
         }
       }
     }
 
-    requirejs.config(config);
+    requirejs.config(config)
     this.configuration = {
       baseUrl: config.baseUrl || '',
       paths: config.paths || {}
-    };
-    this.cutExtensions = requireModuleSupport.get('cutFileCompletionExtensions');
+    }
+    this.cutExtensions = requireModuleSupport.get('cutFileCompletionExtensions')
   }
 
   /**
@@ -99,83 +99,83 @@ class ModuleResolver {
   resolveModulePath (modulePath, currentFilePath) {
     // Plugins, which load other files follow the syntax "plugin!parameter",
     // where "parameter" is usually another module path to be resolved.
-    const pluginSeparator = modulePath.indexOf('!');
-    let filePath;
+    const pluginSeparator = modulePath.indexOf('!')
+    let filePath
 
     if (pluginSeparator > 0) {
-      const pluginExtensions = workspace.getConfiguration('requireModuleSupport').get('pluginExtensions');
-      const pluginName = modulePath.substr(0, pluginSeparator);
+      const pluginExtensions = workspace.getConfiguration('requireModuleSupport').get('pluginExtensions')
+      const pluginName = modulePath.substr(0, pluginSeparator)
 
-      filePath = modulePath.substr(pluginSeparator + 1);
+      filePath = modulePath.substr(pluginSeparator + 1)
       // Plugins may optionally append their known file extensions.
       if (pluginExtensions) {
-        const pluginExtension = pluginExtensions[pluginName];
+        const pluginExtension = pluginExtensions[pluginName]
 
         if (pluginExtension && !filePath.endsWith(pluginExtension)) {
-          filePath += pluginExtension;
+          filePath += pluginExtension
         }
       }
     } else {
       // The requirejs.toUrl method does not append '.js' to the resolved path.
-      filePath = modulePath + '.js';
+      filePath = modulePath + '.js'
     }
 
     // The global requirejs.toUrl does not resolve relative module paths.
     if (filePath.startsWith('./')) {
-      filePath = join(dirname(currentFilePath), filePath);
+      filePath = join(dirname(currentFilePath), filePath)
     }
 
-    return normalize(requirejs.toUrl(filePath));
+    return normalize(requirejs.toUrl(filePath))
   }
 
   /**
    * Guesses possible RequireJS module paths, which would resolve
    * to the specified absolute file path. It works well if modules
-   * are referenced by paths not starting with "./" or "../"; if
+   * are referenced by paths not starting with "./" or "../" if
    * they start with a directory or alias according to the RequireJS
    * configuration `baseUrl` and `paths`.
    * @param {string} filePath The file path to investigate.
    * @returns {Array} Guessed module paths, which may occur as references in other modules.
    */
   unresolveFilePath (filePath) {
-    const cutExtensions = this.cutExtensions;
-    const modulePaths = [];
+    const cutExtensions = this.cutExtensions
+    const modulePaths = []
     // RequireJS looks for modules with the relative path in the directory
     // specified by the `baseUrl` configuration property, which defaults
     // to the current directory, which means the workspace root in VS Code.
-    const { baseUrl, paths } = this.configuration;
+    const { baseUrl, paths } = this.configuration
 
     function dealWithExtension (modulePath) {
-      const extension = extname(modulePath);
+      const extension = extname(modulePath)
 
       return cutExtensions.indexOf(extension) >= 0
         ? modulePath.substr(0, modulePath.length - extension.length)
-        : modulePath;
+        : modulePath
     }
 
     // Suggest the path relative to the `baseUrl` directory, if the file
-    // path is relative to it; usually to the workspace root.
+    // path is relative to it usually to the workspace root.
     if (filePath.startsWith(baseUrl)) {
       modulePaths.push(dealWithExtension(
-        filePath.substr(baseUrl.length).trimLeft('/')));
+        filePath.substr(baseUrl.length).trimLeft('/')))
     }
     // Try to find path aliases at the beginning of the file path, which
     // are specified by the `paths` configuration property.
     Object.keys(paths).forEach(pathPrefix => {
-      let basePath = normalize(join(baseUrl, paths[pathPrefix]));
+      let basePath = normalize(join(baseUrl, paths[pathPrefix]))
 
       if (!basePath.endsWith('/')) {
-        basePath += '/';
+        basePath += '/'
       }
       // Suggest the path starting with the alias (prefix) instead of
       // the actual absolute path.
       if (filePath.startsWith(basePath)) {
         modulePaths.push(dealWithExtension(
-          join(pathPrefix, filePath.substr(basePath.length))));
+          join(pathPrefix, filePath.substr(basePath.length))))
       }
-    });
+    })
 
-    return modulePaths;
+    return modulePaths
   }
 
   /**
@@ -183,8 +183,8 @@ class ModuleResolver {
      * @returns {void} Nothing.
      */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = ModuleResolver;
+module.exports = ModuleResolver

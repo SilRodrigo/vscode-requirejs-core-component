@@ -3,8 +3,8 @@
  * @namespace fileAccess
  */
 
-const { workspace } = require('vscode');
-const { open, fstat, read, close } = require('fs');
+const { workspace } = require('vscode')
+const { open, fstat, read, close } = require('fs')
 
 /**
  * Lists all JavaScript modules in the project.
@@ -15,20 +15,20 @@ const { open, fstat, read, close } = require('fs');
 function findModulePaths (cancellationToken) {
   const includeModulePattern = workspace
     .getConfiguration('requireModuleSupport')
-    .get('includeModulePattern');
+    .get('includeModulePattern')
   const excludeModulePattern = workspace
     .getConfiguration('requireModuleSupport')
-    .get('excludeModulePattern');
+    .get('excludeModulePattern')
 
-  // const message = `Collecting ${includeModulePattern || 'all'} files${excludeModulePattern ? ' without ' + excludeModulePattern : ''}.`;
-  // console.time(message);
+  // const message = `Collecting ${includeModulePattern || 'all'} files${excludeModulePattern ? ' without ' + excludeModulePattern : ''}.`
+  // console.time(message)
   return workspace.findFiles(includeModulePattern, excludeModulePattern,
     undefined, cancellationToken)
     .then(files => {
-      // console.timeEnd(message);
-      // console.log(`${files.length} files collected.`);
-      return files.map(file => file.fsPath);
-    });
+      // console.timeEnd(message)
+      // console.log(`${files.length} files collected.`)
+      return files.map(file => file.fsPath)
+    })
 }
 
 /**
@@ -42,12 +42,12 @@ function openFile (path) {
   return new Promise((resolve, reject) => {
     open(path, 'r', function (error, descriptor) {
       if (error) {
-        reject(error);
+        reject(error)
       } else {
-        resolve(descriptor);
+        resolve(descriptor)
       }
-    });
-  });
+    })
+  })
 }
 
 /**
@@ -61,12 +61,12 @@ function inspectFile (descriptor) {
   return new Promise((resolve, reject) => {
     fstat(descriptor, function (error, state) {
       if (error) {
-        reject(error);
+        reject(error)
       } else {
-        resolve(state);
+        resolve(state)
       }
-    });
-  });
+    })
+  })
 }
 
 /**
@@ -84,12 +84,12 @@ function readFileContent (descriptor, size) {
     read(descriptor, Buffer.alloc(size), 0, size, null,
       function (error, bytesRead, buffer) {
         if (error) {
-          reject(error);
+          reject(error)
         } else {
-          resolve({ buffer, bytesRead });
+          resolve({ buffer, bytesRead })
         }
-      });
-  });
+      })
+  })
 }
 
 /**
@@ -104,11 +104,11 @@ function closeFile (descriptor) {
   return new Promise(resolve => {
     close(descriptor, function (error) {
       if (error) {
-        console.warn(error); // eslint-disable-line no-console
+        console.warn(error) // eslint-disable-line no-console
       }
-      resolve();
-    });
-  });
+      resolve()
+    })
+  })
 }
 
 /**
@@ -120,39 +120,39 @@ function closeFile (descriptor) {
  * @memberof fileAccess
  */
 function getFileStateAndContent (filePath) {
-  let fileDescriptor, fileState;
+  let fileDescriptor, fileState
 
   return openFile(filePath)
     .then(descriptor => {
-      fileDescriptor = descriptor;
+      fileDescriptor = descriptor
 
-      return inspectFile(descriptor);
+      return inspectFile(descriptor)
     })
     .then(state => {
-      state.path = filePath;
-      fileState = state;
+      state.path = filePath
+      fileState = state
 
-      return readFileContent(fileDescriptor, state.size);
+      return readFileContent(fileDescriptor, state.size)
     })
     .then(({ bytesRead, buffer }) => {
-      const fileSize = fileState.size;
+      const fileSize = fileState.size
 
       if (fileSize !== bytesRead) {
         console.warn('Reading content of "' + filePath // eslint-disable-line no-console
           + '" ended with ' + bytesRead + ' instead of '
-          + fileSize + '.');
+          + fileSize + '.')
       }
-      fileState.size = bytesRead;
-      fileState.content = buffer.toString('utf-8', 0, bytesRead);
+      fileState.size = bytesRead
+      fileState.content = buffer.toString('utf-8', 0, bytesRead)
 
-      return closeFile(fileDescriptor);
+      return closeFile(fileDescriptor)
     })
     .then(() => {
-      return fileState;
-    });
+      return fileState
+    })
 }
 
 module.exports = {
   findModulePaths: findModulePaths,
   getFileStateAndContent: getFileStateAndContent
-};
+}

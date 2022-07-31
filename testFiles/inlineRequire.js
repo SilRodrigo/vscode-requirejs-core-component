@@ -1,3 +1,3 @@
 define(function(require) {
-    var moduleA = require('moduleA');
-});
+    var moduleA = require('moduleA')
+})

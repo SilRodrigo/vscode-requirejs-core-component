@@ -1,1 +1,1 @@
-define(['nature/models/fox'], {});
+define(['nature/models/fox'], {})

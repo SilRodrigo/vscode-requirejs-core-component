@@ -3,4 +3,4 @@ require.config({
     nature: 'nature/src',
     garden: 'garden/src'
   }
-});
+})

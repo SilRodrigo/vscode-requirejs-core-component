@@ -67,9 +67,9 @@ The new extension might behave differently than the original one, but it should 
 - CommonJS style requires inside the requireJS blocks are now supported.
 
         define(function(require) {
-            var moduleB = require('moduleB');
-            moduleB.prop;
-        });
+            var moduleB = require('moduleB')
+            moduleB.prop
+        })
 
 ## [0.0.32] - 2017-06-07
 ### Changed

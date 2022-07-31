@@ -9,5 +9,5 @@ define("moduleC", function() {
         baz: function() {
             
         }
-    };
-});
+    }
+})

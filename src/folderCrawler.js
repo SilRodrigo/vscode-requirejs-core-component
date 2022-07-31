@@ -1,9 +1,9 @@
-const { workspace } = require('vscode');
-const { readdir, lstat, stat } = require('fs');
-const { join } = require('path');
-const StatusNotifier = require('../src/statusNotifier');
-const { addDisposable, hostOrCreateDisposable, disposeAll } = require('./disposableHost');
-const push = Array.prototype.push;
+const { workspace } = require('vscode')
+const { readdir, lstat, stat } = require('fs')
+const { join } = require('path')
+const StatusNotifier = require('../src/statusNotifier')
+const { addDisposable, hostOrCreateDisposable, disposeAll } = require('./disposableHost')
+const push = Array.prototype.push
 
 /**
  * Checks existence and walks directories to discover files of configurable
@@ -15,9 +15,9 @@ class FolderCrawler {
    * @param {StatusNotifier} statusNotifier Status bar notification helper.
    */
   constructor (statusNotifier) {
-    this.configure();
-    addDisposable(workspace.onDidChangeConfiguration(() => this.configure()));
-    hostOrCreateDisposable(this, 'statusNotifier', StatusNotifier, statusNotifier);
+    this.configure()
+    addDisposable(workspace.onDidChangeConfiguration(() => this.configure()))
+    hostOrCreateDisposable(this, 'statusNotifier', StatusNotifier, statusNotifier)
   }
 
   /**
@@ -27,13 +27,13 @@ class FolderCrawler {
   configure () {
     this.batchSize = workspace
       .getConfiguration('requireModuleSupport')
-      .get('moduleProcessingBatchSize');
+      .get('moduleProcessingBatchSize')
     this.includedExtensions = workspace
       .getConfiguration('requireModuleSupport')
-      .get('includeFileCompletionExtensions');
+      .get('includeFileCompletionExtensions')
     this.excludedExtensions = workspace
       .getConfiguration('requireModuleSupport')
-      .get('excludeFileCompletionExtensions');
+      .get('excludeFileCompletionExtensions')
   }
 
   /**
@@ -48,12 +48,12 @@ class FolderCrawler {
     return new Promise((resolve, reject) => {
       lstat(folderPath, (error, stats) => {
         if (error || !stats.isDirectory()) {
-          reject(error);
+          reject(error)
         } else {
-          resolve();
+          resolve()
         }
-      });
-    });
+      })
+    })
   }
 
   /**
@@ -66,17 +66,17 @@ class FolderCrawler {
     return new Promise((resolve, reject) => {
       readdir(folderPath, (error, items) => {
         if (error) {
-          reject(error);
+          reject(error)
         } else {
           resolve(items.map(name => {
             return {
               name: name,
               path: join(folderPath, name)
-            };
-          }));
+            }
+          }))
         }
-      });
-    });
+      })
+    })
   }
 
   /**
@@ -88,33 +88,33 @@ class FolderCrawler {
    * folder children: {name, path, directory}.
    */
   inspectFileItems (items, cancellationToken, resultItems) {
-    const outputItems = resultItems || [];
+    const outputItems = resultItems || []
 
     this.statusNotifier.notify('search', 'Inspecting ' + items.length + '...',
-      'Inspecting files and directories... (remaining ' + items.length + ')');
+      'Inspecting files and directories... (remaining ' + items.length + ')')
 
     // Limit the number of concurrently inspected files. When working
     // by batches, the operation will be stoppable after every batch.
     const inspections = items.splice(0, this.batchSize).map(item => {
       return new Promise(resolve => {
-        // Silently ignore permissions errors; if the `directory`
+        // Silently ignore permissions errors if the `directory`
         // property is not a boolean, `stat` failed.
         stat(item.path, (_ignoredError, stats) => {
-          item.directory = stats && stats.isDirectory();
-          resolve(item);
-        });
-      });
-    });
+          item.directory = stats && stats.isDirectory()
+          resolve(item)
+        })
+      })
+    })
 
     return Promise.all(inspections)
       .then(batch => {
         push.apply(outputItems, batch.filter(item => {
           // Skip file-system items, which could jot be accessed.
           if (item.directory === null) {
-            return false;
+            return false
           }
 
-          const name = item.name;
+          const name = item.name
 
           // Directories will be always offered. Files will be
           // offered, if they are specified for inclusion and
@@ -125,17 +125,17 @@ class FolderCrawler {
             || this.includedExtensions.some(
               extension => name.endsWith(extension)))
             && !this.excludedExtensions.some(
-              extension => name.endsWith(extension)));
-        }));
+              extension => name.endsWith(extension)))
+        }))
 
         // Stop processing if this was the last batch or the operation has been cancelled.
         if (!items.length || cancellationToken.isCancellationRequested) {
-          return outputItems;
+          return outputItems
         }
 
         // Process the rest of items after cutting the batch above.
-        return this.inspectFileItems(items, cancellationToken, outputItems);
-      });
+        return this.inspectFileItems(items, cancellationToken, outputItems)
+      })
   }
 
   /**
@@ -143,8 +143,8 @@ class FolderCrawler {
    * @returns {void} Nothing.
    */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = FolderCrawler;
+module.exports = FolderCrawler

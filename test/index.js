@@ -6,7 +6,7 @@ const reporter = require('tehanu-repo-coco')
 exports.run = async (testsRoot, done) => {
   testsRoot = resolve(testsRoot)
   try {
-    const test = process.env.VSCODE_REQUIREJS_TEST;
+    const test = process.env.VSCODE_REQUIREJS_TEST
     if (test) {
       require(join(testsRoot, test))
     } else {

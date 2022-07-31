@@ -1,7 +1,7 @@
-const { workspace, Hover } = require('vscode');
-const ModuleResolver = require('./moduleResolver');
-const {  isInsideString, startsLikeModulePath, getSurroundingModulePath } = require('./modulePath');
-const { hostOrCreateDisposable, disposeAll } = require('./disposableHost');
+const { workspace, Hover } = require('vscode')
+const ModuleResolver = require('./moduleResolver')
+const {  isInsideString, startsLikeModulePath, getSurroundingModulePath } = require('./modulePath')
+const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 
 /**
  * Provides the actual path of a module, relative to the workspace root, which
@@ -13,7 +13,7 @@ class HoverProvider {
    * @param {ModuleResolver} moduleResolver Module to file path resolution helper.
    */
   constructor (moduleResolver) {
-    hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver);
+    hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver)
   }
 
   /**
@@ -23,18 +23,18 @@ class HoverProvider {
    * @returns {Promise} Resolves with the hover content or `undefined`.
    */
   provideHover (document, position) {
-    const currentLine = document.getText(document.lineAt(position).range);
-    const currentCharacter = position.character;
+    const currentLine = document.getText(document.lineAt(position).range)
+    const currentCharacter = position.character
 
     if (isInsideString(currentLine, currentCharacter)) {
-      const filePath = this.getFocusedFilePath(document.fileName, currentLine, currentCharacter);
+      const filePath = this.getFocusedFilePath(document.fileName, currentLine, currentCharacter)
 
       if (filePath) {
-        return new Hover(filePath);
+        return new Hover(filePath)
       }
     }
 
-    return undefined;
+    return undefined
   }
 
   /**
@@ -46,14 +46,14 @@ class HoverProvider {
    * @returns {string} The file-system path or `undefined`, if the string cannot be interpreted as a module path.
    */
   getFocusedFilePath (currentFilePath, currentLine, currentPosition) {
-    const userPath = getSurroundingModulePath(currentLine, currentPosition);
+    const userPath = getSurroundingModulePath(currentLine, currentPosition)
 
     if (!startsLikeModulePath(userPath)) {
-      return undefined;
+      return undefined
     }
 
-    const filePath = this.moduleResolver.resolveModulePath(userPath, currentFilePath);
-    return workspace.asRelativePath(filePath, false);
+    const filePath = this.moduleResolver.resolveModulePath(userPath, currentFilePath)
+    return workspace.asRelativePath(filePath, false)
   }
 
   /**
@@ -61,8 +61,8 @@ class HoverProvider {
    * @returns {void} Nothing.
    */
   dispose () {
-    disposeAll(this);
+    disposeAll(this)
   }
 }
 
-module.exports = HoverProvider;
+module.exports = HoverProvider

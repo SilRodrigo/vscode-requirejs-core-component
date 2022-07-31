@@ -1,4 +1,4 @@
 define(require => {
-    var moduleB = require('moduleB');
-    moduleB.prop;
-});
+    var moduleB = require('moduleB')
+    moduleB.prop
+})

@@ -1,1 +1,1 @@
-define(['garden/models/rabbit'], {});
+define(['garden/models/rabbit'], {})
