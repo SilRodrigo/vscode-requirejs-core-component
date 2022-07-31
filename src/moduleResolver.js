@@ -28,47 +28,66 @@ class ModuleResolver {
    */
   configure () {
     const requireModuleSupport = workspace.getConfiguration('requireModuleSupport');
-    const rootPath = workspace.workspaceFolders && workspace.workspaceFolders[0].uri.fsPath
-      || process.env.VSCODE_REQUIREJS_WORKSPACE;
-    const config = {
-      // Handle the existing modulePath property as baseUrl for require.config()
-      // to support simple scenarios. More complex projects should supply also
-      // configFile in addition to baseUrl to resolve any module path.
-      baseUrl: join(rootPath, requireModuleSupport.get('modulePath'))
-    };
-    // Reuse the configuration for debugging a requirejs project for editing too.
-    // Prevent maintaining the same configuration in settings.json.
-    const configFile = requireModuleSupport.get('configFile');
+
+    let rootPath;
+    if (workspace.workspaceFile) {
+      if (workspace.workspaceFile.scheme !== 'untitled') {
+        rootPath = dirname(workspace.workspaceFile.fsPath);
+      }
+    } else if (workspace.workspaceFolders) {
+      rootPath = workspace.workspaceFolders[0].uri.fsPath;
+    }
+    if (!rootPath) {
+      rootPath = process.env.VSCODE_REQUIREJS_WORKSPACE;
+    }
 
     // Clean up requirejs configuration from the previously activated context.
     // See https://github.com/requirejs/requirejs/issues/1113 for more information.
     delete requirejs.s.contexts._;
 
-    if (configFile) {
-      const configPath = join(rootPath, configFile);
-      const configContent = readFileSync(configPath, 'utf-8');
-      const configObject = amodroConfig.find(configContent);
+    const config = {};
 
-      if (configObject) {
-        Object.assign(config, configObject);
-      }
+    if (rootPath) {
+      // Handle the existing modulePath property as baseUrl for require.config()
+      // to support simple scenarios. More complex projects should supply also
+      // configFile in addition to baseUrl to resolve any module path.
+      config.baseUrl = join(rootPath, requireModuleSupport.get('modulePath'));
 
-      if (!this.fileSystemWatcher) {
-        this.fileSystemWatcher = workspace.createFileSystemWatcher(configPath);
-        addDisposable(this.fileSystemWatcher);
-        addDisposable(this.fileSystemWatcher.onDidChange(() => this.configure()));
-        addDisposable(this.fileSystemWatcher.onDidCreate(() => this.configure()));
-        addDisposable(this.fileSystemWatcher.onDidDelete(() => this.configure()));
+      // Reuse the configuration for debugging a requirejs project for editing too.
+      // Prevent maintaining the same configuration in settings.json.
+      const configFile = requireModuleSupport.get('configFile');
+
+      if (configFile) {
+        const configPath = join(rootPath, configFile);
+        let configObject;
+        try {
+          const configContent = readFileSync(configPath, 'utf-8');
+          configObject = amodroConfig.find(configContent);
+        } catch (error) {
+          console.error(error);
+          return window.showErrorMessage(`Loading "${workspace.asRelativePath(configPath, false)}" failed.`);
+        }
+
+        if (configObject) {
+          Object.assign(config, configObject);
+        }
+
+        if (!this.fileSystemWatcher) {
+          this.fileSystemWatcher = workspace.createFileSystemWatcher(configPath);
+          addDisposable(this.fileSystemWatcher);
+          addDisposable(this.fileSystemWatcher.onDidChange(() => this.configure()));
+          addDisposable(this.fileSystemWatcher.onDidCreate(() => this.configure()));
+          addDisposable(this.fileSystemWatcher.onDidDelete(() => this.configure()));
+        }
       }
     }
+
     requirejs.config(config);
     this.configuration = {
-      baseUrl: config.baseUrl,
+      baseUrl: config.baseUrl || '',
       paths: config.paths || {}
     };
-    this.cutExtensions = workspace
-      .getConfiguration('requireModuleSupport')
-      .get('cutFileCompletionExtensions');
+    this.cutExtensions = requireModuleSupport.get('cutFileCompletionExtensions');
   }
 
   /**

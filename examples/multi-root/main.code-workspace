@@ -1,0 +1,23 @@
+{
+  "folders": [
+    {
+      "path": "garden"
+    },
+    {
+      "path": "nature"
+    }
+    {
+      "name": "main",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "libraries": true,
+      "*/build/out": true
+    },
+    "requireModuleSupport.modulePath": ".",
+    "requireModuleSupport.configFile": "config.js",
+    "requireModuleSupport.includeFileCompletionExtensions": [".js"]
+  }
+}

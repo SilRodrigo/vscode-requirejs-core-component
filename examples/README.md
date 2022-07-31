@@ -32,6 +32,36 @@ This project consists of two components, which modules are referenced by paths p
       }
     });
 
+multi-root
+----------
+
+This project consists of the same two components as [two-components](#two-components) above, but developed within a single VS Code workspace. The projects are developable and buldable separately, but the VS Code configuration is maintained at a single place.
+
+    // main.code-workspace
+    {
+      "folders": [
+        { "path": "garden" },
+        { "path": "nature" }
+      ],
+      "settings:" {
+      	"files.exclude": {
+      		"libraries": true,
+      		"*/build/out": true
+      	},
+      	"requireModuleSupport.modulePath": ".",
+      	"requireModuleSupport.configFile": "config.js",
+      	"requireModuleSupport.includeFileCompletionExtensions": [".js"]
+      }
+    }
+
+    // config.js
+    require.config({
+      paths: {
+        nature: 'nature/src',
+        garden: 'garden/src'
+      }
+    });
+
 css-plugin
 ----------
 
