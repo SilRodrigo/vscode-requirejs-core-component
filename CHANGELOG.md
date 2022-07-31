@@ -1,3 +1,19 @@
+# [2.0.0](https://github.com/prantlf/vscode-requirejs/compare/v1.0.2...v2.0.0) (2022-07-31)
+
+
+### Bug Fixes
+
+* Make RequireJS config paths relative to workspace file ([dcfd8fa](https://github.com/prantlf/vscode-requirejs/commit/dcfd8fa65438a5b6012b1ba7e9939616be059502))
+
+
+### BREAKING CHANGES
+
+* If you used multi-root workspaces, you will need to modify paths in variables `requireModuleSupport.modulePath` and `requireModuleSupport.configFile` to be relative to the directory with the `.code-workspace` file. Because the support for multi-root workspaces wasn't complete, you had to use paths relative to a workspace folder. If the workspace folders had different directory nesting level in relation to the workspace root, it was impossible to configure RequireJS properly. The easiest solution is placing the RequireJS config file next to the `.code-workspace` file and setting `requireModuleSupport.modulePath` to `"."` and `requireModuleSupport.configFile` to the RequireJS config file name.
+
+Paths inside the RequireJS config file are always supposed to be relative to the workspace root, which has not changed.
+
+
+
 ## [1.0.2](https://github.com/prantlf/vscode-requirejs/compare/v1.0.1...v1.0.2) (2022-07-17)
 
 ### Bug Fixes
