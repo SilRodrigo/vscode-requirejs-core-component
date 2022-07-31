@@ -1,14 +1,15 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-	"files.exclude": {
-		".vscode-test": true,
-		"coverage": true,
-		"doc": true,
-		"examples/**/out": true,
-		"node_modules": true
-	},
-	"search.exclude": {
-		"examples/**/libraries": true
-	},
-	"coverage-gutters.showLineCoverage": true
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    ".vscode-test": true,
+    "coverage": true,
+    "examples/**/out": true,
+    "node_modules": true
+  },
+  "search.exclude": {
+    "examples/**/libraries": true
+  },
+  "coverage-gutters.showLineCoverage": true
 }

@@ -1,12 +1,12 @@
 .demolint.json
 .editorconfig
 .eslintignore
+.github/**
 .gitignore
 .vscode/**
 .vscode-test/**
 .vscodeignore
 coverage/**
-doc
 examples/**
 jsconfig.json
 test/**
