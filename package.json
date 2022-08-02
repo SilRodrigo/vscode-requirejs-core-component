@@ -241,7 +241,8 @@
       },
       {
         "command": "requireModuleSupport.renameExportedSymbol",
-        "key": "f2",
+        "key": "Ctrl+f2",
+        "mac": "Cmd+f2",
         "when": "editorLangId == javascript && requireModuleSupport:showRenameExportedSymbolCommand"
       }
     ],
