@@ -1,10 +1,13 @@
 const { workspace, Uri, Location, Range, Position } = require('vscode')
+const nls = require('vscode-nls')
 const { findAllIdentifiers } = require('./codeParser')
 const { findModulePaths, getFileStateAndContent } = require('./fileAccess')
 const ModuleAnalyser = require('./moduleAnalyser')
 const StatusNotifier = require('./statusNotifier')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 const push = Array.prototype.push
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Provides locations of references to a selected identifier, either an object
@@ -110,8 +113,9 @@ class ReferenceProvider {
       return ranges || []
     }
 
-    this.statusNotifier.notify('search', 'Analysing ' + projectFilePaths.length + '...',
-      'Analysing files... (remaining ' + projectFilePaths.length + ')')
+    this.statusNotifier.notify('search',
+      localize('analysingStarted.title', 'Analysing {0}...', projectFilePaths.length),
+      localize('analysingStarted.message', 'Analysing files... (remaining {0})', projectFilePaths.length))
 
     // Limit the number of files being analysed. When working
     // by batches, the operation will be stoppable after every batch.
@@ -175,8 +179,9 @@ class ReferenceProvider {
 
       if (filePath && (isMember || selected === moduleDependency.imported)) {
         this.statusNotifier.show()
-        this.statusNotifier.notify('telescope', 'Globbing...',
-          'Looking up all modules...')
+        this.statusNotifier.notify('telescope',
+          localize('globbingStarted.title', 'Globbing...'),
+          localize('globbingStarted.message', 'Looking up all modules...'))
 
         return findModulePaths(cancellationToken)
           .then(projectFilePaths => {
@@ -197,14 +202,16 @@ class ReferenceProvider {
             }, projectFilePaths, cancellationToken)
           })
           .then(references => {
-            this.statusNotifier.notify('check', references.length + ' refs found.',
-              'File analysis finished. ' + references.length + ' references found.')
+            this.statusNotifier.notify('check',
+              localize('globbingSucceeded.title', '{0} refs found.', references.length),
+              localize('globbingSucceeded.message', 'File analysis finished. {0} references found.', references.length))
             this.statusNotifier.hide()
 
             return references
           }, error => {
-            this.statusNotifier.notify('alert', 'Refs unavailable.',
-              'File analysis failed: ' + error.message)
+            this.statusNotifier.notify('alert',
+              localize('globbingFailed.title', 'Refs unavailable.'),
+              localize('globbingFailed.message', 'File analysis failed: {0}', error.message))
             this.statusNotifier.hide()
             throw error
           })
@@ -212,8 +219,9 @@ class ReferenceProvider {
     }
 
     this.statusNotifier.show()
-    this.statusNotifier.notify('stop', 'No module.',
-      'No originating module found.')
+    this.statusNotifier.notify('stop',
+      localize('noOriginatingModule.title', 'No module.'),
+      localize('noOriginatingModule.message', 'No originating module found.'))
     this.statusNotifier.hide()
   }
 

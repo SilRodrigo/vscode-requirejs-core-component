@@ -1,0 +1,6 @@
+{
+  "crawlSucceeded.title": "Nalezeno {0} položek.",
+  "crawlSucceeded.message": "Hledání souborů a adresářů dokončeno. Nalezeno {0} položek k nabídnutí.",
+  "crawlFailed.title": "Obsah adresáře neznámý.",
+  "crawlFailed.message": "Hledání souborů a adresářů selhalo: {0}"
+}

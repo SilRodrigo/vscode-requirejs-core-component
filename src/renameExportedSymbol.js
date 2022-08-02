@@ -3,6 +3,9 @@
  * @module renameExportedSymbol
  */
 const { commands, workspace, window, CancellationTokenSource } = require('vscode')
+const nls = require('vscode-nls')
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Implements the "Rename Exported Symbol" editor command.
@@ -26,7 +29,7 @@ module.exports = function renameExportedSymbol (renameProvider, editor) {
   const cancellationToken = cancellationTokenSource.token
 
   return window.showInputBox({
-    prompt: 'Enter the new name.',
+    prompt: localize('enterNewName', 'Enter the new name.'),
     value: oldName,
     valueSelection: [0, oldName.length]
   })

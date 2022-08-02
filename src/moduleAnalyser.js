@@ -1,4 +1,5 @@
 const { workspace, window, Uri } = require('vscode')
+const nls = require('vscode-nls')
 const { findDependencies, findCjsDependencies }
 = require('@prantlf/amodro-trace/parse')
 const { detectDefinesOrRequires, detectImportsAndExports }
@@ -10,6 +11,8 @@ const { findModuleExport, findBodyReturn, findOriginatingModuleDependency }
 const ModuleResolver = require('./moduleResolver')
 const CacheByDocumentOrFile = require('./cacheByDocumentOrFile')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Analyses JavaScript files to find out, if they are RequireJS modules
@@ -63,7 +66,7 @@ class ModuleAnalyser {
           || document.content || '', { loc: true, jsx: supportJsx, module: supportEsm })
         // console.timeEnd(message)
       } catch (error) {
-        console.warn('Parsing "' // eslint-disable-line no-console
+        console.warn('Parsing "'
           + (document.fileName || document.path)
           + '" failed:', error)
         astRoot = {}
@@ -276,11 +279,13 @@ class ModuleAnalyser {
               .stat(Uri.file(filePath))
               .then(() => ({ filePath }))
               .catch(() => {
-                window.showWarningMessage(`"${workspace.asRelativePath(filePath, false)}" does not exist.`)
+                window.showWarningMessage(localize('fileDoesNotExist',
+                  '"{0}" does not exist.', workspace.asRelativePath(filePath, false)))
               })
           }
 
-          window.showErrorMessage('No string resembling a module path was selected.')
+          window.showErrorMessage(localize('noStringWithModulePath',
+            'No string resembling a module path was selected.'))
           return
         }
 

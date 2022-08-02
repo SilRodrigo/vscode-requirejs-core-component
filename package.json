@@ -1,273 +1,279 @@
 {
-	"name": "vscode-requirejs",
-	"displayName": "RequireJS Module Support",
-	"description": "Looks up modules and identifiers in AMD projects using RequireJS.",
-	"version": "2.0.0",
-	"homepage": "https://github.com/prantlf/vscode-requirejs#readme",
-	"author": {
-		"name": "Ferdinand Prantl",
-		"email": "prantlf@gmail.com",
-		"url": "http://prantl.tk"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/prantlf/vscode-requirejs.git"
-	},
-	"bugs": {
-		"url": "https://github.com/prantlf/vscode-requirejs/issues"
-	},
-	"license": "MIT",
-	"licenses": [
-		{
-			"type": "MIT",
-			"url": "https://github.com/prantlf/vscode-requirejs/blob/master/LICENSE"
-		}
-	],
-	"main": "src/extension",
-	"scripts": {
-		"lint": "denolint",
-		"check": "node test/runTest",
-		"cover": "c8 node test/runTest",
-		"test": "denolint && c8 node test/runTest",
-		"version": "npx conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md"
-	},
-	"tehanu": {
-		"autostart": false,
-		"reporter": "coco"
-	},
-	"c8": {
-		"check-coverage": false,
-		"reporter": [
-			"text",
-			"lcov"
-		],
-		"branches": 100,
-		"lines": 100,
-		"functions": 100,
-		"statements": 100
-	},
-	"dependencies": {
-		"@prantlf/amodro-trace": "^2.0.0",
-		"@prantlf/requirejs": "^3.0.0",
-		"estree-walkie": "^0.0.4",
-		"lru-cache": "^7.13.1",
-		"meriyah": "^4.2.1",
-		"requirejs-esm": "^2.3.0"
-	},
-	"devDependencies": {
-		"@node-rs/deno-lint": "^1.14.0",
-		"@vscode/test-electron": "^2.1.5",
-		"c8": "^7.12.0",
-		"fast-glob": "^3.2.11",
-		"jsdoc": "^3.6.11",
-		"proxyquire": "^2.1.3",
-		"sinon": "^14.0.0",
-		"tehanu": "^1.0.1",
-		"tehanu-repo-coco": "^1.0.0",
-		"typescript": "^4.7.4"
-	},
-	"keywords": [
-		"vscode-extension",
-		"multi-root ready",
-		"requirejs",
-		"require",
-		"amd"
-	],
-	"publisher": "prantlf",
-	"icon": "logo.png",
-	"engines": {
-		"vscode": "^1.5.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onLanguage:javascript",
-		"onLanguage:javascriptreact",
-		"onCommand:requireModuleSupport.goToDefinitionModule",
-		"onCommand:requireModuleSupport.renameExportedSymbol"
-	],
-	"contributes": {
-		"configuration": {
-			"type": "object",
-			"title": "RequireJS Module Support",
-			"properties": {
-				"requireModuleSupport.enableDefinitionProvider": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enables cross-module symbol lookup in the \"Go to Definition\" command."
-				},
-				"requireModuleSupport.enableReferenceProvider": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enables cross-module symbol lookup in the \"Find All References\" command."
-				},
-				"requireModuleSupport.enableCompletionItemProvider": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enables selecting from the module directory content when typing \"/\" inside a string with a module path."
-				},
-				"requireModuleSupport.enableHoverProvider": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enables displaying the file-system path, which the module path resolves to, when hovering with the mouse cursor above a string with a module path."
-				},
-				"requireModuleSupport.enableRenameProvider": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enables cross-module symbol lookup in the \"Rename Symbol\" command."
-				},
-				"requireModuleSupport.showGoToDefinitionModuleCommand": {
-					"type": "boolean",
-					"default": true,
-					"description": "Shows the \"Go to Definition Module\" command in context menus."
-				},
-				"requireModuleSupport.showRenameExportedSymbolCommand": {
-					"type": "boolean",
-					"default": true,
-					"description": "Shows the \"Rename Exported Symbol\" command in context menus."
-				},
-				"requireModuleSupport.configFile": {
-					"type": "string",
-					"default": "",
-					"description": "Path of the RequireJS configuration file relative to workspace root"
-				},
-				"requireModuleSupport.enableCjsModules": {
-					"type": "boolean",
-					"default": false,
-					"description": "Parse source files as pure CommonJS modules"
-				},
-				"requireModuleSupport.enableJsxModules": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable support for the JSX language extension"
-				},
-				"requireModuleSupport.enableEsModules": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable detection of ES modules in addition to AMD or CJS modules"
-				},
-				"requireModuleSupport.moduleCacheSize": {
-					"type": "integer",
-					"default": 10000,
-					"description": "Maximum count of parsed modules and their dependencies kept in memory as cache to improve performance"
-				},
-				"requireModuleSupport.dynamicModuleCacheSize": {
-					"type": "boolean",
-					"default": true,
-					"description": "Make cache sizes depend on the count of JavaScript modules in the project"
-				},
-				"requireModuleSupport.dynamicModuleCacheSizeExtra": {
-					"type": "integer",
-					"default": 10,
-					"description": "How many percent of the JavaScript module count should be reserved not to exhaust the cache so quickly"
-				},
-				"requireModuleSupport.includeModulePattern": {
-					"type": "string",
-					"default": "**/*.js",
-					"description": "File globbing pattern to find JavaScript modules in this project"
-				},
-				"requireModuleSupport.excludeModulePattern": {
-					"type": "string",
-					"default": "",
-					"description": "File globbing pattern to exclude when looking for JavaScript modules in this project"
-				},
-				"requireModuleSupport.cutFileCompletionExtensions": {
-					"type": "array",
-					"default": [
-						".js",
-						".jsx",
-						".css",
-						".less",
-						".scss",
-						".hbs",
-						".html"
-					],
-					"description": "File extensions to cut, if the file name is offered in module path completion"
-				},
-				"requireModuleSupport.includeFileCompletionExtensions": {
-					"type": "array",
-					"default": [],
-					"description": "Only the specified file extensions will be included for module path completion; all will be included, if empty"
-				},
-				"requireModuleSupport.excludeFileCompletionExtensions": {
-					"type": "array",
-					"default": [],
-					"description": "The specified file extensions will not be included for module path completion"
-				},
-				"requireModuleSupport.modulePath": {
-					"type": "string",
-					"default": "",
-					"description": "Module path relative to workspace root"
-				},
-				"requireModuleSupport.onlyNavigateToFile": {
-					"type": "boolean",
-					"default": false,
-					"description": "When set to true, it will prevent the final search for the identifier in the landing module and instead just reference the file."
-				},
-				"requireModuleSupport.pluginExtensions": {
-					"type": "object",
-					"default": {},
-					"description": "Assigns default file extensions to target module paths used with RequireJS plugins"
-				},
-				"requireModuleSupport.moduleProcessingBatchSize": {
-					"type": "number",
-					"default": 30,
-					"description": "How many documents should be opened and searched before cancelling of the operation is possible"
-				}
-			}
-		},
-		"commands": [
-			{
-				"command": "requireModuleSupport.goToDefinitionModule",
-				"title": "Go to Definition Module"
-			},
-			{
-				"command": "requireModuleSupport.renameExportedSymbol",
-				"title": "Rename Exported Symbol"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "requireModuleSupport.goToDefinitionModule",
-				"key": "f12",
-				"when": "editorLangId == javascript && requireModuleSupport:showGoToDefinitionModuleCommand"
-			},
-			{
-				"command": "requireModuleSupport.renameExportedSymbol",
-				"key": "f2",
-				"when": "editorLangId == javascript && requireModuleSupport:showRenameExportedSymbolCommand"
-			}
-		],
-		"menus": {
-			"editor/context": [
-				{
-					"command": "requireModuleSupport.goToDefinitionModule",
-					"when": "editorLangId == javascript && requireModuleSupport:showGoToDefinitionModuleCommand",
-					"group": "navigation"
-				},
-				{
-					"command": "requireModuleSupport.renameExportedSymbol",
-					"when": "editorLangId == javascript && requireModuleSupport:showRenameExportedSymbolCommand",
-					"group": "1_modification"
-				}
-			],
-			"commandPalette": [
-				{
-					"command": "requireModuleSupport.goToDefinitionModule",
-					"when": "editorLangId == javascript"
-				},
-				{
-					"command": "requireModuleSupport.renameExportedSymbol",
-					"when": "editorLangId == javascript"
-				}
-			]
-		}
-	},
-	"__metadata": {
-		"id": "bff3fb6f-4e1e-4bd3-8666-4fdd15d9d45e",
-		"publisherDisplayName": "Ferdinand Prantl",
-		"publisherId": "0ced7712-5400-4aa1-b1d8-c377e01b0453",
-		"isPreReleaseVersion": false
-	}
+  "name": "vscode-requirejs",
+  "displayName": "RequireJS Module Support",
+  "description": "Looks up modules and identifiers in AMD projects using RequireJS.",
+  "version": "2.0.0",
+  "homepage": "https://github.com/prantlf/vscode-requirejs#readme",
+  "author": {
+    "name": "Ferdinand Prantl",
+    "email": "prantlf@gmail.com",
+    "url": "http://prantl.tk"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prantlf/vscode-requirejs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/prantlf/vscode-requirejs/issues"
+  },
+  "license": "MIT",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/prantlf/vscode-requirejs/blob/master/LICENSE"
+    }
+  ],
+  "main": "src/extension",
+  "scripts": {
+    "prepare": "gulp",
+    "lint": "denolint",
+    "check": "node test/runTest",
+    "cover": "c8 node test/runTest",
+    "test": "denolint && c8 node test/runTest",
+    "version": "npx conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md"
+  },
+  "tehanu": {
+    "autostart": false,
+    "reporter": "coco"
+  },
+  "c8": {
+    "check-coverage": false,
+    "reporter": [
+      "text",
+      "lcov"
+    ],
+    "branches": 100,
+    "lines": 100,
+    "functions": 100,
+    "statements": 100
+  },
+  "dependencies": {
+    "@prantlf/amodro-trace": "^2.0.0",
+    "@prantlf/requirejs": "^3.0.0",
+    "estree-walkie": "^0.0.4",
+    "lru-cache": "^7.13.2",
+    "meriyah": "^4.3.0",
+    "requirejs-esm": "^2.3.0",
+    "vscode-nls": "^5.0.1"
+  },
+  "devDependencies": {
+    "@node-rs/deno-lint": "^1.14.0",
+    "@vscode/test-electron": "^2.1.5",
+    "c8": "^7.12.0",
+    "del": "^6.1.1",
+    "event-stream": "^4.0.1",
+    "fast-glob": "^3.2.11",
+    "gulp": "^4.0.2",
+    "jsdoc": "^3.6.11",
+    "proxyquire": "^2.1.3",
+    "sinon": "^14.0.0",
+    "tehanu": "^1.0.1",
+    "tehanu-repo-coco": "^1.0.0",
+    "typescript": "^4.7.4",
+    "vscode-nls-dev": "^4.0.0"
+  },
+  "keywords": [
+    "vscode-extension",
+    "multi-root ready",
+    "requirejs",
+    "require",
+    "amd"
+  ],
+  "publisher": "prantlf",
+  "icon": "logo.png",
+  "engines": {
+    "vscode": "^1.5.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onCommand:requireModuleSupport.goToDefinitionModule",
+    "onCommand:requireModuleSupport.renameExportedSymbol"
+  ],
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "RequireJS Module Support",
+      "properties": {
+        "requireModuleSupport.enableDefinitionProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableDefinitionProvider%"
+        },
+        "requireModuleSupport.enableReferenceProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableReferenceProvider%"
+        },
+        "requireModuleSupport.enableCompletionItemProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableCompletionItemProvider%"
+        },
+        "requireModuleSupport.enableHoverProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableHoverProvider%"
+        },
+        "requireModuleSupport.enableRenameProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableRenameProvider%"
+        },
+        "requireModuleSupport.showGoToDefinitionModuleCommand": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.showGoToDefinitionModuleCommand%"
+        },
+        "requireModuleSupport.showRenameExportedSymbolCommand": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.showRenameExportedSymbolCommand%"
+        },
+        "requireModuleSupport.configFile": {
+          "type": "string",
+          "default": "",
+          "description": "%requirejs.config.configFile%"
+        },
+        "requireModuleSupport.enableCjsModules": {
+          "type": "boolean",
+          "default": false,
+          "description": "%requirejs.config.enableCjsModules%"
+        },
+        "requireModuleSupport.enableJsxModules": {
+          "type": "boolean",
+          "default": false,
+          "description": "%requirejs.config.enableJsxModules%"
+        },
+        "requireModuleSupport.enableEsModules": {
+          "type": "boolean",
+          "default": false,
+          "description": "%requirejs.config.enableEsModules%"
+        },
+        "requireModuleSupport.moduleCacheSize": {
+          "type": "integer",
+          "default": 10000,
+          "description": "%requirejs.config.moduleCacheSize%"
+        },
+        "requireModuleSupport.dynamicModuleCacheSize": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.dynamicModuleCacheSize%"
+        },
+        "requireModuleSupport.dynamicModuleCacheSizeExtra": {
+          "type": "integer",
+          "default": 10,
+          "description": "%requirejs.config.dynamicModuleCacheSizeExtra%"
+        },
+        "requireModuleSupport.includeModulePattern": {
+          "type": "string",
+          "default": "**/*.js",
+          "description": "%requirejs.config.includeModulePattern%"
+        },
+        "requireModuleSupport.excludeModulePattern": {
+          "type": "string",
+          "default": "",
+          "description": "%requirejs.config.excludeModulePattern%"
+        },
+        "requireModuleSupport.cutFileCompletionExtensions": {
+          "type": "array",
+          "default": [
+            ".js",
+            ".jsx",
+            ".css",
+            ".less",
+            ".scss",
+            ".hbs",
+            ".html"
+          ],
+          "description": "%requirejs.config.cutFileCompletionExtensions%"
+        },
+        "requireModuleSupport.includeFileCompletionExtensions": {
+          "type": "array",
+          "default": [],
+          "description": "%requirejs.config.includeFileCompletionExtensions%"
+        },
+        "requireModuleSupport.excludeFileCompletionExtensions": {
+          "type": "array",
+          "default": [],
+          "description": "%requirejs.config.excludeFileCompletionExtensions%"
+        },
+        "requireModuleSupport.modulePath": {
+          "type": "string",
+          "default": "",
+          "description": "%requirejs.config.modulePath%"
+        },
+        "requireModuleSupport.onlyNavigateToFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "%requirejs.config.onlyNavigateToFile%"
+        },
+        "requireModuleSupport.pluginExtensions": {
+          "type": "object",
+          "default": {},
+          "description": "%requirejs.config.pluginExtensions%"
+        },
+        "requireModuleSupport.moduleProcessingBatchSize": {
+          "type": "number",
+          "default": 30,
+          "description": "%requirejs.config.moduleProcessingBatchSize%"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "requireModuleSupport.goToDefinitionModule",
+        "title": "%requirejs.command.goToDefinitionModule.title%"
+      },
+      {
+        "command": "requireModuleSupport.renameExportedSymbol",
+        "title": "%requirejs.command.renameExportedSymbol.title%"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "requireModuleSupport.goToDefinitionModule",
+        "key": "f12",
+        "when": "editorLangId == javascript && requireModuleSupport:showGoToDefinitionModuleCommand"
+      },
+      {
+        "command": "requireModuleSupport.renameExportedSymbol",
+        "key": "f2",
+        "when": "editorLangId == javascript && requireModuleSupport:showRenameExportedSymbolCommand"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "requireModuleSupport.goToDefinitionModule",
+          "when": "editorLangId == javascript && requireModuleSupport:showGoToDefinitionModuleCommand",
+          "group": "navigation"
+        },
+        {
+          "command": "requireModuleSupport.renameExportedSymbol",
+          "when": "editorLangId == javascript && requireModuleSupport:showRenameExportedSymbolCommand",
+          "group": "1_modification"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "requireModuleSupport.goToDefinitionModule",
+          "when": "editorLangId == javascript"
+        },
+        {
+          "command": "requireModuleSupport.renameExportedSymbol",
+          "when": "editorLangId == javascript"
+        }
+      ]
+    }
+  },
+  "__metadata": {
+    "id": "bff3fb6f-4e1e-4bd3-8666-4fdd15d9d45e",
+    "publisherDisplayName": "Ferdinand Prantl",
+    "publisherId": "0ced7712-5400-4aa1-b1d8-c377e01b0453",
+    "isPreReleaseVersion": false
+  }
 }

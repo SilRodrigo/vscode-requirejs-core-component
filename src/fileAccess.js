@@ -104,7 +104,7 @@ function closeFile (descriptor) {
   return new Promise(resolve => {
     close(descriptor, function (error) {
       if (error) {
-        console.warn(error) // eslint-disable-line no-console
+        console.warn(error)
       }
       resolve()
     })
@@ -138,7 +138,7 @@ function getFileStateAndContent (filePath) {
       const fileSize = fileState.size
 
       if (fileSize !== bytesRead) {
-        console.warn('Reading content of "' + filePath // eslint-disable-line no-console
+        console.warn('Reading content of "' + filePath
           + '" ended with ' + bytesRead + ' instead of '
           + fileSize + '.')
       }

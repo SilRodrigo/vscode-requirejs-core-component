@@ -8,6 +8,8 @@
 .vscodeignore
 coverage/**
 examples/**
+gulpfile.js
+i18n/**
 jsconfig.json
 test/**
 testFiles/**

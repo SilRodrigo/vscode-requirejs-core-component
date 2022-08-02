@@ -1,0 +1,12 @@
+{
+  "analysingStarted.title": "Analyzuje se {0}...",
+  "analysingStarted.message": "Analyzují se soubory... (zbývá {0})",
+  "globbingStarted.title": "Vyhledávání...",
+  "globbingStarted.message": "Vyhledávají se všechny moduly...",
+  "globbingSucceeded.title": "Nalezeno {0} odkazů.",
+  "globbingSucceeded.message": "Hledání odkazů dokončeno. Nalezeno {0} odkazů.",
+  "globbingFailed.title": "Odkazy nejsou k dispozici.",
+  "globbingFailed.message": "Hledání odkazů selhalo: {0}",
+  "noOriginatingModule.title": "Žádný modul.",
+  "noOriginatingModule.message": "Žádný zdrojový modul nebyl nalezen."
+}

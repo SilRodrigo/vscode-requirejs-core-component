@@ -1,10 +1,12 @@
 const { CompletionItem, CompletionItemKind, workspace } = require('vscode')
-const CompletionItemFileKind = CompletionItemKind.File
+const nls = require('vscode-nls')
 const ModuleResolver = require('./moduleResolver')
 const FolderCrawler = require('./folderCrawler')
-const {  isInsideString, startsLikeModulePath, getModulePathUpToPosition } = require('./modulePath')
+const { isInsideString, startsLikeModulePath, getModulePathUpToPosition } = require('./modulePath')
 const { basename, extname } = require('path')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Creates completion items for file-system nodes.
@@ -41,7 +43,7 @@ function createCompletionItems (items) {
       // Show files after directories.
       completion.sortText = 'f'
     }
-    completion.kind = CompletionItemFileKind
+    completion.kind = CompletionItemKind.File
 
     return completion
   })
@@ -103,14 +105,16 @@ class CompletionItemProvider {
           .then(items => createCompletionItems(items))
       }, () => [])
       .then(items => {
-        statusNotifier.notify('check', items.length + ' items found.',
-          'File and directory inspection finished. ' + items.length + ' completion items found.')
+        statusNotifier.notify('check',
+          localize('crawlSucceeded.title', '{0} items found.', items.length),
+          localize('crawlSucceeded.message', 'File and directory inspection finished. {0} completion items found.', items.length))
         statusNotifier.hide()
 
         return items
       }, error => {
-        statusNotifier.notify('alert', 'Items unavailable.',
-          'File and directory inspection failed: ' + error.message)
+        statusNotifier.notify('alert',
+          localize('crawlFailed.title', 'Items unavailable.'),
+          localize('crawlFailed.message', 'File and directory inspection failed: {0}', error.message))
         statusNotifier.hide()
         throw error
       })

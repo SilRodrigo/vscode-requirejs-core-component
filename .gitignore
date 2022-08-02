@@ -1,5 +1,7 @@
 .vscode-test
 *.vsix
+*nls.*.json
 coverage
 examples/**/build/out
 node_modules
+/out

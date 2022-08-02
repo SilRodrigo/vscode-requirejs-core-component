@@ -1,9 +1,12 @@
 const { workspace } = require('vscode')
+const nls = require('vscode-nls')
 const { readdir, lstat, stat } = require('fs')
 const { join } = require('path')
 const StatusNotifier = require('../src/statusNotifier')
 const { addDisposable, hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 const push = Array.prototype.push
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Checks existence and walks directories to discover files of configurable
@@ -90,8 +93,9 @@ class FolderCrawler {
   inspectFileItems (items, cancellationToken, resultItems) {
     const outputItems = resultItems || []
 
-    this.statusNotifier.notify('search', 'Inspecting ' + items.length + '...',
-      'Inspecting files and directories... (remaining ' + items.length + ')')
+    this.statusNotifier.notify('search',
+      localize('inspectingStarted.title', 'Inspecting {0}...', items.length),
+      localize('inspectingStarted.message', 'Inspecting files and directories... (remaining {0})', items.length))
 
     // Limit the number of concurrently inspected files. When working
     // by batches, the operation will be stoppable after every batch.

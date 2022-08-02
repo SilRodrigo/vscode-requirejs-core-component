@@ -1,9 +1,12 @@
 const { workspace } = require('vscode')
+const nls = require('vscode-nls')
 const amodroConfig = require('@prantlf/amodro-trace/config')
 const { addDisposable, disposeAll } = require('./disposableHost')
 const { readFileSync } = require('fs')
 const { normalize, join, dirname, extname } = require('path')
 const requirejs = require('@prantlf/requirejs')
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Resolves RequireJS module paths, which are used in `define` and
@@ -65,7 +68,8 @@ class ModuleResolver {
           configObject = amodroConfig.find(configContent)
         } catch (error) {
           console.error(error)
-          return window.showErrorMessage(`Loading "${workspace.asRelativePath(configPath, false)}" failed.`)
+          return window.showErrorMessage(localize('loadingConfigFailed',
+            'Loading "{0}" failed.', workspace.asRelativePath(configPath, false)))
         }
 
         if (configObject) {

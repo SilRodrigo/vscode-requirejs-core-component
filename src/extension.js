@@ -4,6 +4,7 @@
  */
 
 const { commands, languages, workspace } = require('vscode')
+const nls = require('vscode-nls')
 const StatusNotifier = require('./statusNotifier')
 const ModuleResolver = require('./moduleResolver')
 const ModuleAnalyser = require('./moduleAnalyser')
@@ -15,6 +16,8 @@ const HoverProvider = require('./hoverProvider')
 const RenameProvider = require('./renameProvider')
 const goToDefinitionModule = require('./goToDefinitionModule')
 const renameExportedSymbol = require('./renameExportedSymbol')
+
+nls.config({ messageFormat: nls.MessageFormat.file })()
 
 /**
  * Sets a context flag, which can be used to enable or disable menu items.

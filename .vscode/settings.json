@@ -9,7 +9,8 @@
     "node_modules": true
   },
   "search.exclude": {
-    "examples/**/libraries": true
-  },
-  "coverage-gutters.showLineCoverage": true
+    "examples/**/libraries": true,
+    "/out/**": true,
+    "*nls.*.json": true
+  }
 }
