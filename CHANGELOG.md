@@ -1,3 +1,17 @@
+# [2.1.0](https://github.com/prantlf/vscode-requirejs/compare/v2.0.0...v2.1.0) (2022-08-02)
+
+
+### Bug Fixes
+
+* Change the key of renameExportedSymbol to crtl+f2 ([ea2c7c9](https://github.com/prantlf/vscode-requirejs/commit/ea2c7c995275f1e93d245544f4ff2ad8c8892ee5))
+
+
+### Features
+
+* Add Czech localisation ([4dbb9ce](https://github.com/prantlf/vscode-requirejs/commit/4dbb9cecdd115e9b6dd78f581a84c7df371495f7))
+
+
+
 # [2.0.0](https://github.com/prantlf/vscode-requirejs/compare/v1.0.2...v2.0.0) (2022-07-31)
 
 
