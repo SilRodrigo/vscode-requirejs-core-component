@@ -200,12 +200,6 @@ In lieu of a formal styleguide, take care to maintain the existing coding
 style. Run `npm test` to validate your changes. Use the examples
 in the `pkg/examples` directory to check the effect of your changes.
 
-## Others
-
-Users of [TextMate] can install the [OScript Bundle]. Other editors with the syntax highlighting for OScript are based on [Scintilla], for example. [SciTE], [Geany], [Nodepad++] and [others] include a [colourful theme] for the [OScript lexer].
-
-Web pages can highlight the OScript syntax of a code example [using JavaScript].
-
 ## License
 
 Copyright (c) 2020-2022 Ferdinand Prantl<br>
