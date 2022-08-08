@@ -1,3 +1,12 @@
+## [2.1.2](https://github.com/prantlf/vscode-requirejs/compare/v2.1.1...v2.1.2) (2022-08-08)
+
+
+### Bug Fixes
+
+* Do not let invalid code break reference lookup ([d69371d](https://github.com/prantlf/vscode-requirejs/commit/d69371d35f1d8c7b7972859ba31bd9ba3f897d24))
+
+
+
 ## [2.1.1](https://github.com/prantlf/vscode-requirejs/compare/v2.1.0...v2.1.1) (2022-08-08)
 
 
