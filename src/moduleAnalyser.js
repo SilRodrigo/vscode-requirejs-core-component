@@ -11,7 +11,7 @@ const { findModuleExport, findBodyReturn, findOriginatingModuleDependency }
 const ModuleResolver = require('./moduleResolver')
 const CacheByDocumentOrFile = require('./cacheByDocumentOrFile')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
-const { configureLocalization } = require('./nlsHelpers')
+const { configureLocalization, choosePlural } = require('./nlsHelpers')
 
 configureLocalization(nls)
 const localize = nls.loadMessageBundle()
@@ -32,6 +32,7 @@ class ModuleAnalyser {
     hostOrCreateDisposable(this, 'moduleResolver', ModuleResolver, moduleResolver)
     hostOrCreateDisposable(this, 'parsedCache', CacheByDocumentOrFile)
     hostOrCreateDisposable(this, 'analysedCache', CacheByDocumentOrFile)
+    this.errors = []
   }
 
   /**
@@ -43,6 +44,27 @@ class ModuleAnalyser {
   adaptCacheSizes (moduleCount) {
     this.parsedCache.adaptCacheSize(moduleCount)
     this.analysedCache.adaptCacheSize(moduleCount)
+  }
+
+  /**
+   * Starts collecting parsing errors durng a multi-file operation by clearing
+   * the remembered error list.
+   */
+  startCollectingErrors() {
+    this.errors = []
+  }
+
+  /**
+   * Report the parsing errors if there are any and clear the error list.
+   */
+  reportErrors() {
+    const { errors } = this
+    if (errors.length) {
+      window.showWarningMessage(choosePlural(errors.length, localize('analysingFailed',
+          'Analysing {0} file failed.|||Analysing {0} files failed.', errors.length)))
+      console.warn('File analysis failed:', errors.map(({ path }) => workspace.asRelativePath(path, false)))
+    }
+    this.errors = []
   }
 
   /**
@@ -71,7 +93,12 @@ class ModuleAnalyser {
         console.warn('Parsing "'
           + (document.fileName || document.path)
           + '" failed:', error)
-        astRoot = {}
+        astRoot = {
+          type: 'Program',
+          sourceType: supportEsm ? 'module' : 'script',
+          body: []
+        }
+        this.errors.push({ error, path: document.fileName || document.path })
       }
       this.parsedCache.setCachedObject(document, astRoot)
     }
@@ -113,7 +140,7 @@ class ModuleAnalyser {
       } else {
         const amds = detectDefinesOrRequires(astRoot)
         if (amds.length) {
-          const { deps, params, factory, body } = amds[0]
+          const { deps, params = [], factory, body } = amds[0]
           const { body: block = {} } = factory || body || {}
           if (deps) {
             const depNodes = deps.elements || []

@@ -171,7 +171,16 @@ class ReferenceProvider {
    * @returns {Promise} Resolves with a file location.
    */
   async provideReferences (document, position, _options, cancellationToken) {
-    const moduleDependency = await this.moduleAnalyser.getOriginatingModuleDependency(document, position)
+    this.moduleAnalyser.startCollectingErrors()
+
+    let moduleDependency
+    try {
+      moduleDependency = await this.moduleAnalyser.getOriginatingModuleDependency(document, position)
+    } finally {
+      if (!moduleDependency) {
+        this.moduleAnalyser.reportErrors()
+      }
+    }
 
     // If the selected identifier cannot be tracked to other module,
     // let the built-in reference lookup handle it. Only references
@@ -204,6 +213,7 @@ class ReferenceProvider {
             }, projectFilePaths, cancellationToken)
           })
           .then(references => {
+            this.moduleAnalyser.reportErrors()
             this.statusNotifier.notify('check',
               choosePlural(references.length, localize('globbingSucceeded.title',
                 '{0} ref found.|||{0} refs found.', references.length)),
@@ -213,6 +223,7 @@ class ReferenceProvider {
 
             return references
           }, error => {
+            this.moduleAnalyser.reportErrors()
             this.statusNotifier.notify('alert',
               localize('globbingFailed.title', 'Refs unavailable.'),
               localize('globbingFailed.message', 'File analysis failed: {0}', error.message))
@@ -222,6 +233,7 @@ class ReferenceProvider {
       }
     }
 
+    this.moduleAnalyser.reportErrors()
     this.statusNotifier.show()
     this.statusNotifier.notify('stop',
       localize('noOriginatingModule.title', 'No module.'),

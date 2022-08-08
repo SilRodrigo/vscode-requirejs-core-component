@@ -19,6 +19,8 @@ const { walk, walkAtPosition } = require('estree-walkie')
 function parseModule (content, options = {}) {
   return parse(content, {
     next: true,
+    impliedStrict: false,
+    globalReturn: true,
     module: options.module,
     ranges: options.ranges || options.range,
     loc: options.loc,

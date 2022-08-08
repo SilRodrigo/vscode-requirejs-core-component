@@ -57,17 +57,23 @@ class DefinitionProvider {
    * @returns {Promise} Resolves with a file location.
    */
   async provideDefinition (document, position) {
-    const moduleDependency = await this.moduleAnalyser.getOriginatingModuleDependency(document, position)
+    this.moduleAnalyser.startCollectingErrors()
 
-    // If the selected identifier cannot be tracked to other module,
-    // let the built-in definition lookup handle it. The symbol definition
-    // can be found, only if its originating module could be found.
-    if (moduleDependency) {
-      const filePath = moduleDependency.filePath
+    try {
+      const moduleDependency = await this.moduleAnalyser.getOriginatingModuleDependency(document, position)
 
-      if (filePath) {
-        return this.searchModule(filePath, moduleDependency.selected)
+      // If the selected identifier cannot be tracked to other module,
+      // let the built-in definition lookup handle it. The symbol definition
+      // can be found, only if its originating module could be found.
+      if (moduleDependency) {
+        const filePath = moduleDependency.filePath
+
+        if (filePath) {
+          return await this.searchModule(filePath, moduleDependency.selected)
+        }
       }
+    } finally {
+      this.moduleAnalyser.reportErrors()
     }
   }
 
