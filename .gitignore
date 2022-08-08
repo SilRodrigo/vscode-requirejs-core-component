@@ -5,3 +5,4 @@ coverage
 examples/**/build/out
 node_modules
 /out
+/xlf
