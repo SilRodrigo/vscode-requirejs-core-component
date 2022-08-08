@@ -10,7 +10,8 @@
   },
   "search.exclude": {
     "examples/**/libraries": true,
+    "*nls.*.json": true,
     "/out/**": true,
-    "*nls.*.json": true
+    "/xlf/**": true
   }
 }

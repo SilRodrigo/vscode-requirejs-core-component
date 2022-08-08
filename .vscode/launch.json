@@ -1,28 +1,48 @@
 // A launch configuration that launches the extension inside a new window
 {
-    "version": "0.1.0",
-    "configurations": [
-        {
-            "name": "Extension",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceRoot}"
-            ],
-            "sourceMaps": true,
-            "outFiles": [ "${workspaceRoot}/out/src/**/*.js" ]
-        },
-        {
-            "name": "Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "${workspaceRoot}/testFiles",
-                "--extensionDevelopmentPath=${workspaceRoot}",
-                "--extensionTestsPath=${workspaceRoot}/test" 
-            ]
-        }
-    ]
+  "version": "0.1.0",
+  "configurations": [
+    {
+      "name": "gulp:default",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
+      "args": [
+        "default"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceRoot}"
+      ],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceRoot}/out/src/**/*.js"
+      ],
+      "preLaunchTask": "default"
+    },
+    {
+      "name": "Tests",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "${workspaceRoot}/testFiles",
+        "--extensionDevelopmentPath=${workspaceRoot}",
+        "--extensionTestsPath=${workspaceRoot}/test" 
+      ],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceRoot}/out/src/**/*.js"
+      ],
+      "preLaunchTask": "default"
+    }
+  ]
 }
