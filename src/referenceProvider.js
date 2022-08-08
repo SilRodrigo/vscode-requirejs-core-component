@@ -5,9 +5,11 @@ const { findModulePaths, getFileStateAndContent } = require('./fileAccess')
 const ModuleAnalyser = require('./moduleAnalyser')
 const StatusNotifier = require('./statusNotifier')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
-const push = Array.prototype.push
+const { configureLocalization, choosePlural } = require('./nlsHelpers')
 
+configureLocalization(nls)
 const localize = nls.loadMessageBundle()
+const push = Array.prototype.push
 
 /**
  * Provides locations of references to a selected identifier, either an object
@@ -203,8 +205,10 @@ class ReferenceProvider {
           })
           .then(references => {
             this.statusNotifier.notify('check',
-              localize('globbingSucceeded.title', '{0} refs found.', references.length),
-              localize('globbingSucceeded.message', 'File analysis finished. {0} references found.', references.length))
+              choosePlural(references.length, localize('globbingSucceeded.title',
+                '{0} ref found.|||{0} refs found.', references.length)),
+              choosePlural(references.length, localize('globbingSucceeded.message',
+                'File analysis finished. {0} reference found.|||File analysis finished. {0} references found.', references.length)))
             this.statusNotifier.hide()
 
             return references

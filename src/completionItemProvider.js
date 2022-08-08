@@ -5,7 +5,9 @@ const FolderCrawler = require('./folderCrawler')
 const { isInsideString, startsLikeModulePath, getModulePathUpToPosition } = require('./modulePath')
 const { basename, extname } = require('path')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
+const { configureLocalization, choosePlural } = require('./nlsHelpers')
 
+configureLocalization(nls)
 const localize = nls.loadMessageBundle()
 
 /**
@@ -106,8 +108,10 @@ class CompletionItemProvider {
       }, () => [])
       .then(items => {
         statusNotifier.notify('check',
-          localize('crawlSucceeded.title', '{0} items found.', items.length),
-          localize('crawlSucceeded.message', 'File and directory inspection finished. {0} completion items found.', items.length))
+          choosePlural(items.length, localize('crawlSucceeded.title',
+            '{0} item found.|||{0} items found.', items.length)),
+          choosePlural(items.length, localize('crawlSucceeded.message',
+            'File and directory inspection finished. {0} completion item found.|||File and directory inspection finished. {0} completion items found.', items.length)))
         statusNotifier.hide()
 
         return items

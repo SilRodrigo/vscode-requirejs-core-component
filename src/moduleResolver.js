@@ -1,11 +1,13 @@
 const { workspace } = require('vscode')
 const nls = require('vscode-nls')
 const amodroConfig = require('@prantlf/amodro-trace/config')
-const { addDisposable, disposeAll } = require('./disposableHost')
 const { readFileSync } = require('fs')
 const { normalize, join, dirname, extname } = require('path')
 const requirejs = require('@prantlf/requirejs')
+const { addDisposable, disposeAll } = require('./disposableHost')
+const { configureLocalization } = require('./nlsHelpers')
 
+configureLocalization(nls)
 const localize = nls.loadMessageBundle()
 
 /**

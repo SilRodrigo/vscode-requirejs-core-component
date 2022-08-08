@@ -4,9 +4,11 @@ const { readdir, lstat, stat } = require('fs')
 const { join } = require('path')
 const StatusNotifier = require('../src/statusNotifier')
 const { addDisposable, hostOrCreateDisposable, disposeAll } = require('./disposableHost')
-const push = Array.prototype.push
+const { configureLocalization } = require('./nlsHelpers')
 
+configureLocalization(nls)
 const localize = nls.loadMessageBundle()
+const push = Array.prototype.push
 
 /**
  * Checks existence and walks directories to discover files of configurable

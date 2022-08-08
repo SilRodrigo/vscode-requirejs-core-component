@@ -11,7 +11,9 @@ const { findModuleExport, findBodyReturn, findOriginatingModuleDependency }
 const ModuleResolver = require('./moduleResolver')
 const CacheByDocumentOrFile = require('./cacheByDocumentOrFile')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
+const { configureLocalization } = require('./nlsHelpers')
 
+configureLocalization(nls)
 const localize = nls.loadMessageBundle()
 
 /**

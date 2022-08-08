@@ -4,7 +4,9 @@
  */
 const { commands, workspace, window, CancellationTokenSource } = require('vscode')
 const nls = require('vscode-nls')
+const { configureLocalization } = require('./nlsHelpers')
 
+configureLocalization(nls)
 const localize = nls.loadMessageBundle()
 
 /**
