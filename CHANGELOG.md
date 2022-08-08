@@ -1,3 +1,13 @@
+## [2.1.1](https://github.com/prantlf/vscode-requirejs/compare/v2.1.0...v2.1.1) (2022-08-08)
+
+
+### Bug Fixes
+
+* Deploy the language pack as a bundle ([8d1d74b](https://github.com/prantlf/vscode-requirejs/commit/8d1d74b9535d0c9ac215cb5454c7e4266cb6ee69))
+* Implement pluralisation for localised strings ([0a3bc52](https://github.com/prantlf/vscode-requirejs/commit/0a3bc5284ed02f3d938a0ce408336185c2480b24))
+
+
+
 # [2.1.0](https://github.com/prantlf/vscode-requirejs/compare/v2.0.0...v2.1.0) (2022-08-02)
 
 

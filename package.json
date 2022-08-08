@@ -2,7 +2,7 @@
   "name": "vscode-requirejs",
   "displayName": "RequireJS Module Support",
   "description": "Looks up modules and identifiers in AMD projects using RequireJS.",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "homepage": "https://github.com/prantlf/vscode-requirejs#readme",
   "author": {
     "name": "Ferdinand Prantl",
