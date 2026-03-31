@@ -1,26 +1,26 @@
 {
   "name": "vscode-requirejs",
-  "displayName": "RequireJS Module Support",
+  "displayName": "CoreComponent Module Support",
   "description": "Looks up modules and identifiers in AMD projects using RequireJS.",
   "version": "2.1.2",
-  "homepage": "https://github.com/prantlf/vscode-requirejs#readme",
+  "homepage": "https://github.com/SilRodrigo/vscode-requirejs-core-component#readme",
   "author": {
-    "name": "Ferdinand Prantl",
-    "email": "prantlf@gmail.com",
-    "url": "http://prantl.tk"
+    "name": "Rodrigo Silva",
+    "email": "rodrigosil91@gmail.com",
+    "url": ""
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/prantlf/vscode-requirejs.git"
+    "url": "https://github.com/SilRodrigo/vscode-requirejs-core-component.git"
   },
   "bugs": {
-    "url": "https://github.com/prantlf/vscode-requirejs/issues"
+    "url": "https://github.com/SilRodrigo/vscode-requirejs-core-component/issues"
   },
   "license": "MIT",
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/prantlf/vscode-requirejs/blob/master/LICENSE"
+      "url": "https://github.com/SilRodrigo/vscode-requirejs-core-component/blob/master/LICENSE"
     }
   ],
   "main": "out/extension",
@@ -82,7 +82,7 @@
     "require",
     "amd"
   ],
-  "publisher": "prantlf",
+  "publisher": "Rodrigo Silva",
   "icon": "logo.png",
   "engines": {
     "vscode": "^1.5.0"
@@ -99,7 +99,7 @@
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "RequireJS Module Support",
+      "title": "Core Component Module Support",
       "properties": {
         "requireModuleSupport.enableDefinitionProvider": {
           "type": "boolean",

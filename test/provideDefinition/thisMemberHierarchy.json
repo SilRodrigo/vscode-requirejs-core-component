@@ -1,0 +1,68 @@
+[
+  {
+    "name": "this.localFlag resolves to local defaults property",
+    "source": {
+      "position": {
+        "line": 7,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "thisMemberHierarchy.js",
+      "range": {
+        "start": {
+          "line": 3,
+          "character": 6
+        },
+        "end": {
+          "line": 3,
+          "character": 15
+        }
+      }
+    }
+  },
+  {
+    "name": "this.parentFlag resolves in parent chain defaults",
+    "source": {
+      "position": {
+        "line": 8,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "moduleThisMemberBase.js",
+      "range": {
+        "start": {
+          "line": 3,
+          "character": 6
+        },
+        "end": {
+          "line": 3,
+          "character": 16
+        }
+      }
+    }
+  },
+  {
+    "name": "this.getObservable resolves in parent chain methods",
+    "source": {
+      "position": {
+        "line": 9,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "moduleThisMemberBase.js",
+      "range": {
+        "start": {
+          "line": 7,
+          "character": 4
+        },
+        "end": {
+          "line": 7,
+          "character": 17
+        }
+      }
+    }
+  }
+]

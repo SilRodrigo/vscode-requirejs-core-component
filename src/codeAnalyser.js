@@ -219,6 +219,21 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
   let selected = identifier.name
   let isMember = false
   let imported, modulePath
+  let lookupThisMemberInHierarchy = false
+
+  // Walks parent links to the closest ancestor satisfying the predicate.
+  function findParentNode (node, predicate) {
+    for (let parent = node && node.parent; parent; parent = parent.parent) {
+      if (predicate(parent)) return parent
+    }
+  }
+
+  function getPropertyName (property) {
+    const { key, computed } = property
+    if (!key || computed) return undefined
+    if (key.type === 'Identifier') return key.name
+    if (key.type === 'Literal' && typeof key.value === 'string') return key.value
+  }
 
   // Returns the module name from a `require(...)` call expression.
   function getRequiredModule (call) {
@@ -354,6 +369,101 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
     }
   }
 
+  // Detects `this._super(...)` in a method override passed to `*.extend({...})`
+  // and maps it to the same method in the parent module.
+  function searchForModuleDependencyInSuperCallOverride () {
+    const parent = identifier.parent
+    if (!(parent && parent.type === 'MemberExpression' && parent.computed === false &&
+      parent.object && parent.object.type === 'ThisExpression' &&
+      parent.property && parent.property.type === 'Identifier' &&
+      parent.property.name === '_super' &&
+      parent.property === identifier)) {
+      return
+    }
+
+    const ownerProperty = findParentNode(parent, node => {
+      return node.type === 'Property' && (node.method ||
+        node.value && (node.value.type === 'FunctionExpression' || node.value.type === 'ArrowFunctionExpression'))
+    })
+    if (!ownerProperty) return
+
+    const methodName = getPropertyName(ownerProperty)
+    if (!methodName) return
+
+    const ownerObject = ownerProperty.parent
+    if (!(ownerObject && ownerObject.type === 'ObjectExpression')) return
+
+    const extendCall = findParentNode(ownerObject, node => {
+      if (!(node.type === 'CallExpression' && node.arguments)) return false
+      if (!node.arguments.some(argument => argument === ownerObject)) return false
+
+      const { callee } = node
+      return callee && callee.type === 'MemberExpression' && callee.computed === false &&
+        callee.property && callee.property.type === 'Identifier' && callee.property.name === 'extend'
+    })
+    if (!extendCall) return
+
+    const extendObject = extendCall.callee.object
+    if (!extendObject) return
+
+    if (extendObject.type === 'Identifier') {
+      imported = extendObject.name
+    } else if (!detectTargetObject(extendObject)) {
+      return
+    }
+
+    selected = methodName
+    isMember = true
+  }
+
+  // Detects `this.member` inside methods passed to `*.extend({...})`
+  // to enable member lookup in local defaults/methods and parent chain.
+  function searchForModuleDependencyInThisExtendMember () {
+    const parent = identifier.parent
+    if (!(parent && parent.type === 'MemberExpression' && parent.computed === false &&
+      parent.object && parent.object.type === 'ThisExpression' &&
+      parent.property && parent.property.type === 'Identifier' &&
+      parent.property === identifier)) {
+      return
+    }
+
+    if (identifier.name === '_super') {
+      return
+    }
+
+    const ownerProperty = findParentNode(parent, node => {
+      return node.type === 'Property' && (node.method ||
+        node.value && (node.value.type === 'FunctionExpression' || node.value.type === 'ArrowFunctionExpression'))
+    })
+    if (!ownerProperty) return
+
+    const ownerObject = ownerProperty.parent
+    if (!(ownerObject && ownerObject.type === 'ObjectExpression')) return
+
+    const extendCall = findParentNode(ownerObject, node => {
+      if (!(node.type === 'CallExpression' && node.arguments)) return false
+      if (!node.arguments.some(argument => argument === ownerObject)) return false
+
+      const { callee } = node
+      return callee && callee.type === 'MemberExpression' && callee.computed === false &&
+        callee.property && callee.property.type === 'Identifier' && callee.property.name === 'extend'
+    })
+    if (!extendCall) return
+
+    const extendObject = extendCall.callee.object
+    if (!extendObject) return
+
+    if (extendObject.type === 'Identifier') {
+      imported = extendObject.name
+    } else if (!detectTargetObject(extendObject)) {
+      return
+    }
+
+    lookupThisMemberInHierarchy = true
+    selected = identifier.name
+    isMember = true
+  }
+
   // Tracks the path from a local variable to a formal parameter
   // representing the originating module of the dependent object.
   function searchForModuleDependencyInVariables () {
@@ -389,6 +499,8 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 
   // Start by analysing the expression either a direct function call or
   // a dereferenced member call.
+  searchForModuleDependencyInSuperCallOverride()
+  searchForModuleDependencyInThisExtendMember()
   searchForModuleDependencyInExpression()
 
   // Exported identifiers usually equal to formal parameters used for importing.
@@ -415,7 +527,8 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
     modulePath: modulePath,
     imported: imported,
     selected: selected,
-    isMember: isMember
+    isMember: isMember,
+    lookupThisMemberInHierarchy
   }
 }
 
