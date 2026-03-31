@@ -1,216 +1,139 @@
-# RequireJS Module Support
+# CoreComponent Module Support
 
-Looks up modules and identifiers in CJS/AMD/ES projects using RequireJS.
+CoreComponent Module Support is a VS Code extension focused on Magento 2 projects that use AMD modules and the Core Component pattern.
 
-* Go To Definition and Find All References for imported identifiers and string literals with module names.
-* Autocomplete module names when typing.
-* Show module paths when hovering above module names.
-* Rename imported and exported symbols.
-* Support module formats CJS, AMD, UMD and ES.
-* Support modern JavaScript (ES2021).
+It improves navigation across module inheritance and helps developers move faster in frontend codebases with deep extension chains.
 
-This project started by enhancing the extension [Require Module Support], but was rewritten to use parsing and AST traversal instead of regexp string matching, when the original approach started making further improvements difficult. It might behave differently than the original extension, but it should follow the language more correctly.
+## Fork Notice
+
+This repository is a fork of the original RequireJS extension work.
+
+Original base and inspiration:
+- Require Module Support by Ali Naci Erdem
+- RequireJS Module Support by Ferdinand Prantl
+
+This fork is maintained by Rodrigo Silva and is focused on Magento 2 Core Component workflows.
+
+## Main Features
+
+- Go to definition for AMD module paths in `define` and `require`.
+- Go to symbol definitions across modules.
+- Module path completion and hover support.
+- Rename imported and exported symbols.
+- Core Component specific navigation enhancements:
+  - Navigate from module path to `.extend(...)` declaration in the target module.
+  - Navigate from `_super` to the overridden method in the parent chain.
+  - Navigate `this.member` across inheritance with fallback order:
+    1. `defaults`
+    2. `declareObservables`
+    3. methods
+
+## Magento 2 Core Component Focus
+
+The extension is optimized for patterns commonly used in Magento 2 frontend modules, including:
+
+- `Component.extend({...})` style inheritance.
+- Parent method resolution for overrides.
+- Cross-file lookup of properties and methods inherited from base components.
 
 ## Installation
 
-Look for [RequireJS Module Support] in the [Visual Studio Marketplace], [Open VSX Registry], or [install the extension by the command line], if you have the VS Code or VS Codium binary in `PATH`:
+Install from a local VSIX package:
 
-    code --install-extension prantlf.vscode-requirejs
-    vscodium --install-extension prantlf.vscode-requirejs
+```bash
+code --install-extension ./vscode-requirejs-1.0.0.vsix --force
+```
 
-If you used the extension [Require Module Support], uninstall it or disable it to prevent conflicts.
+If your VSIX file has a different name, replace it in the command above.
 
-## Navigation
+## Configuration
 
-You can navigate to the source file from locations marked with the caret (^):
+All extension settings are prefixed with `requireModuleSupport.`.
 
-    // main
-    require('moduleA').foo()
-               ^       ^
+Common settings:
 
-    // moduleC
-    define(['moduleA', 'moduleB'], function(a, b) {
-               ^           ^                ^  ^
-      var foo = a
-           ^    ^
-      var bar = new b()
-           ^        ^
-      foo.baz()
-       ^  ^
-      bar.prop
-       ^    ^
-    })
+- `enableDefinitionProvider`
+- `enableReferenceProvider`
+- `enableCompletionItemProvider`
+- `enableHoverProvider`
+- `enableRenameProvider`
+- `configFile`
+- `modulePath`
+- `onlyNavigateToFile`
+- `lookupMaxLevels`
+- `observableDeclarationMethodNames`
 
-    // moduleC ESM
-    import a from 'moduleA'
-           ^          ^
-    import b from 'moduleB'
-           ^          ^
-    const foo = a
-           ^    ^
-    const bar = b
-           ^    ^
-    foo.baz()
-     ^   ^
-    bar.prop
-     ^   ^
+Core Component navigation settings:
 
-    // moduleA
-    define(() => {
-      return {
-        foo: function() { ... },
-        bar: function() { ... },
-        baz: function() { ... }
-      }
-    })
+- `requireModuleSupport.lookupMaxLevels`
+  - Controls max parent-chain depth used for inherited lookups (`this.member`, `_super`, and inherited identifier fallback).
+  - Example: `3`
+- `requireModuleSupport.observableDeclarationMethodNames`
+  - Method names where assignments like `this.member = ...` are treated as observable declarations.
+  - Example: `["declareObservables"]`
 
-    // moduleB
-    export default {
-      prop: 6
-    }
+Conventions that are fixed (not configurable):
 
-## Settings
+- Inheritance is detected through `.extend(...)`.
+- Parent override navigation uses `_super`.
+- Member fallback order remains: `defaults` -> observable declarations -> methods.
 
-The following properties can be set in `settings.json` to override the default values. The names from the table below have to be prefixed with `requireModuleSupport.`, which is omitted in the table to save space. Paths in property values should be relative to the workspace root. See also the [project examples].
+You can set these in VS Code settings JSON.
 
-| Name | Type | Default | Description |
-| ---- | ---- | ------- | ----------- |
-| enableDefinitionProvider | `boolean` | `true` | Enables cross-module symbol lookup in the "Go to Definition" command. |
-| enableReferenceProvider | `boolean` | `true` | Enables cross-module symbol lookup in the "Find All References" command. |
-| enableCompletionItemProvider | `boolean` | `true` | Enables selecting from the module directory content when typing "/" inside a string with a module path. |
-| enableHoverProvider | `boolean` | `true` | Enables displaying the file-system path, which the module path resolves to, when hovering with the mouse cursor above a string with a module path. |
-| enableRenameProvider | `boolean` | `true` | Enables cross-module symbol lookup in the "Rename Symbol" command. |
-| showGoToDefinitionModuleCommand | `boolean` | `true` | Shows the "Go to Definition Module" command in context menus. |
-| showRenameExportedSymbolCommand | `boolean` | `true` | Shows the "Rename Exported Symbol" command in context menus. |
-| configFile | `string` | `` | Path of the RequireJS configuration file relative to workspace root |
-| enableCjsModules | `boolean` | `false` | Parse source files as pure CommonJS modules |
-| enableJsxModules | `boolean` | `false` | Enable support for the JSX language extension |
-| enableEsModules | `boolean` | `false` | Enable detection of ES modules in addition to AMD or CJS modules |
-| moduleCacheSize | `integer` | `10000` | Maximum count of parsed modules and their dependencies kept in memory as cache to improve performance |
-| dynamicModuleCacheSize | `boolean` | `true` | Make cache sizes depend on the count of JavaScript modules in the project |
-| dynamicModuleCacheSizeExtra | `integer` | `10` | How many percent of the JavaScript module count should be reserved not to exhaust the cache so quickly |
-| includeModulePattern | `string` | `**/*.js` | File globbing pattern to find JavaScript modules in this project |
-| excludeModulePattern | `string` | `` | File globbing pattern to exclude when looking for JavaScript modules in this project |
-| cutFileCompletionExtensions | `array` | `.js,.jsx,.css,.less,.scss,.hbs,.html` | File extensions to cut, if the file name is offered in module path completion |
-| includeFileCompletionExtensions | `array` | `` | Only the specified file extensions will be included for module path completion; all will be included, if empty |
-| excludeFileCompletionExtensions | `array` | `` | The specified file extensions will not be included for module path completion |
-| modulePath | `string` | `.` | Module path relative to workspace root |
-| onlyNavigateToFile | `boolean` | `false` | When set to true, it will prevent the final search for the identifier in the landing module and instead just reference the file. |
-| pluginExtensions | `object` | `{}` | Assigns default file extensions to target module paths used with RequireJS plugins |
-| moduleProcessingBatchSize | `number` | `30` | How many documents should be opened and searched before cancelling of the operation is possible |
+## Required Project Files
 
-### Disable Functionality
+In the Magento 2 project where this extension will be used, create a `.vscode` folder with these two files:
 
-If you want to omit a provider or a command registered by this extension, you can set the corresponding property to `false`: `enableDefinitionProvider`, `enableReferenceProvider`, `enableCompletionItemProvider`, `enableHoverProvider`, `enableRenameProvider`, `showGoToDefinitionModuleCommand`, `showRenameExportedSymbolCommand`.
+```text
+.vscode/
+  settings.json
+  vscode-require-config.js
+```
 
-### Plugins and File Extensions
+### `.vscode/settings.json`
 
-If you use RequireJS plugins in your projects, which do not require appending file extensions to their target modules, you will need to supply these extensions too. For example:
+This file tells the extension where the RequireJS configuration file is located.
 
-    "requireModuleSupport.pluginExtensions": {
-      "css": ".css"
-    }
+```json
+{
+  "requireModuleSupport.configFile": ".vscode/vscode-require-config.js"
+}
+```
 
-This will ensure, that a module reference like "css!views/panel" will be handled as "css!views/panel.css" before resolving the actual module path.
+### `.vscode/vscode-require-config.js`
 
-If you use module path completion, you can customise what file extensions will be omitted, because the corresponding plugin does not expect an extension. For example:
+This file should expose the RequireJS paths used by the Magento 2 frontend being developed.
 
-    "requireModuleSupport.cutFileCompletionExtensions": [
-      ".js", ".css"
-    ]
-
-### Module Format
-
-If you use pure CommonJS syntax instead of AMD in your sources (not CommonJS wrappers in `define()` statements) and then compile them together with `r.js`, which generates AMD wrappers for you, you have to set the following flag to `true`:
-
-    "requireModuleSupport.enableCjsModules"
-
-CJS modules cannot be mixed with other module formats.
-
-The following flags can be set to `true` to enable the ES module format and the JSX syntax:
-
-    "requireModuleSupport.enableEsModules"
-    "requireModuleSupport.enableJsxModules"
-
-### RequireJS Config Files
-
-RequireJS configuration properties like `paths`, `bundles` and `config` are usually maintained in a separate file in a single `require.config()` statement. This file can be evaluated, when the project is loaded on debug pages, when the project is built (for root components) and in other situations - like this editor plugin.
-
-Example:
-
-    // config.js
+```javascript
+(function (require) {
+  (function () {
     require.config({
       paths: {
-        ui: 'ui/src',        // The "ui" component is located elsewere.
-        css: 'libraries/css' // A shortcut for the full module path.
+        Vendor_Core: 'vendor/vendor-name/module-core/view/frontend/web',
+        Vendor_Feature: 'app/design/frontend/Vendor/theme/Vendor_Feature/web',
+        Vendor_Shared: 'app/code/Vendor/Shared/view/frontend/web'
       }
     })
+  })()
+})(require)
+```
 
-    // main.js
-    require(['ui/views/panel'], function (Panel) {
-      const panel = new Panel()
-      document.body.appendChild(panel.el)
-    })
+Adjust the aliases and paths to match the modules available in your Magento 2 codebase.
 
-    // ui/src/views/panel.js
-    define(['css!./panel'], function () {
-      function Panel () {
-        this.el = ...
-      }
-      return Panel
-    })
+## Development
 
-    // ui/src/views/panel.css
-    .panel {
-      ...
-    }
+Build the extension output:
 
-If you specify a `requireModuleSupport.configFile`, which does not contain `baseUrl`, the value of `requireModuleSupport.modulePath` will be used as `baseUrl`.
+```bash
+npx gulp default
+```
 
-### Performance
+Create a VSIX package:
 
-The original extension used regexp string matching, which limited the correctness of language construct recognition. This extension traverses a ESTree AST, which has to be parsed from the source files, which slows down the operation.
-
-Once parsed files are cached to avoid repetitive parsing of the same file. You can increase the default cache size for large projects:
-
-    "requireModuleSupport.enableEsModules": 50000
-
-While Go To Definition parses only the target module source, Find All References does the same for all files in the project. The static cache size may be increased to satisfy this operation and set to a little more percent to avoid fast exhaustion:
-
-    "requireModuleSupport.dynamicModuleCacheSize": true
-    "requireModuleSupport.dynamicModuleCacheSizeExtra": 5
-
-Find All References can be further optimised by specifying what files should be included and what files should be further excluded from the inclusion pattern:
-
-    "requireModuleSupport.includeModulePattern": "src/**/*.js"
-    "requireModuleSupport.excludeModulePattern": "src/vendor/**/*.js"
-
-Find All References can process a limited batch of files in parallel to prevent CPU exhaustion by analysing thousands of files in parallel:
-
-    "requireModuleSupport.excludeModulePattern": 50
-
-You can also limit files, which are suggested by the moule path autocompletion by listing either included or excluded file extensions:
-
-    "requireModuleSupport.includeFileCompletionExtensions": [".js", ".css"]
-    "requireModuleSupport.excludeFileCompletionExtensions": [".txt"]
-
-## Contributing
-
-In lieu of a formal styleguide, take care to maintain the existing coding
-style. Run `npm test` to validate your changes. Use the examples
-in the `pkg/examples` directory to check the effect of your changes.
+```bash
+npx @vscode/vsce package
+```
 
 ## License
 
-Copyright (c) 2020-2022 Ferdinand Prantl<br>
-Copyright (c) 2020      Ali Naci Erdem
-
-Licensed under the [MIT license].
-
-[RequireJS Module Support]: https://marketplace.visualstudio.com/items?itemName=prantlf.vscode-requirejs
-[Visual Studio Marketplace]: https://marketplace.visualstudio.com/items?itemName=prantlf.vscode-requirejs
-[Open VSX Registry]: https://open-vsx.org/extension/prantlf/vscode-requirejs
-[Require Module Support]: https://marketplace.visualstudio.com/items?itemName=lici.require-js
-[project examples]: ./examples/#readme
-[install the extension by the command line]: https://code.visualstudio.com/docs/editor/command-line
-[MIT license]: ./LICENSE
+Licensed under the MIT license. See `LICENSE`.

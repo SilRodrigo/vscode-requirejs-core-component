@@ -319,6 +319,12 @@ class ModuleAnalyser {
         }
 
         moduleDependency = findOriginatingModuleDependency(astRoot, identifier, dependencies)
+
+        if (moduleDependency.lookupThisMemberInHierarchy) {
+          moduleDependency.filePath = currentFilePath
+          return moduleDependency
+        }
+
         const modulePath = moduleDependency.modulePath
 
         if (modulePath) {

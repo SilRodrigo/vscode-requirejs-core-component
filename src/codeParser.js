@@ -98,6 +98,231 @@ function findIdentifier (astRoot, identifier) {
 }
 
 /**
+ * Finds the first occurrence of a call expression with callee ending in
+ * `.extend(...)`, such as `Component.extend(...)`.
+ * @param {Object} astRoot Parsed document.
+ * @returns {Object} Range, where the `.extend` property was found as
+ * {start,end} object with {line,column} sub-objects.
+ * @memberof codeParser
+ */
+function findFirstExtendCall (astRoot) {
+  let loc
+
+  try {
+    walk(astRoot, {
+      CallExpression(node) {
+        const { callee } = node
+
+        if (callee && callee.type === 'MemberExpression' &&
+          callee.computed === false && callee.property &&
+          callee.property.type === 'Identifier' && callee.property.name === 'extend') {
+          loc = callee.property.loc
+          throw 0
+        }
+      }
+    })
+  } catch (err) {
+    if (typeof err !== 'number') throw err
+  }
+
+  return loc
+}
+
+/**
+ * Finds the base object identifier of the first call expression ending in
+ * `.extend(...)`, such as `Component.extend(...)`.
+ * @param {Object} astRoot Parsed document.
+ * @returns {string} Identifier name of the extended object.
+ * @memberof codeParser
+ */
+function findFirstExtendBaseIdentifier (astRoot) {
+  let name
+
+  try {
+    walk(astRoot, {
+      CallExpression(node) {
+        const { callee } = node
+
+        if (callee && callee.type === 'MemberExpression' &&
+          callee.computed === false && callee.property &&
+          callee.property.type === 'Identifier' && callee.property.name === 'extend' &&
+          callee.object && callee.object.type === 'Identifier') {
+          name = callee.object.name
+          throw 0
+        }
+      }
+    })
+  } catch (err) {
+    if (typeof err !== 'number') throw err
+  }
+
+  return name
+}
+
+function getPropertyName (property) {
+  const { key, computed } = property
+  if (!key || computed) return undefined
+  if (key.type === 'Identifier') return key.name
+  if (key.type === 'Literal' && typeof key.value === 'string') return key.value
+}
+
+function isExtendCall (node) {
+  const { callee } = node || {}
+
+  return callee && callee.type === 'MemberExpression' &&
+    callee.computed === false && callee.property &&
+    callee.property.type === 'Identifier' && callee.property.name === 'extend'
+}
+
+function findExtendObject (callExpression) {
+  const { arguments: args = [] } = callExpression || {}
+
+  return args.find(argument => argument && argument.type === 'ObjectExpression')
+}
+
+function findObservableAssignmentInFunction (functionNode, memberName) {
+  let loc
+
+  try {
+    walk(functionNode.body, {
+      AssignmentExpression(node) {
+        const { left, operator } = node
+
+        if (operator !== '=' || !(left && left.type === 'MemberExpression' && left.computed === false)) {
+          return
+        }
+
+        const { object, property } = left
+        if (object && object.type === 'ThisExpression' &&
+          property && property.type === 'Identifier' && property.name === memberName &&
+          property.loc) {
+          loc = property.loc
+          throw 0
+        }
+      }
+    })
+  } catch (err) {
+    if (typeof err !== 'number') throw err
+  }
+
+  return loc
+}
+
+function normalizeExtendMemberResolutionOptions (options = {}) {
+  const normalized = {
+    observableDeclarationMethodNames: ['declareObservables']
+  }
+
+  const { observableDeclarationMethodNames } = options
+
+  if (Array.isArray(observableDeclarationMethodNames)) {
+    const names = observableDeclarationMethodNames
+      .filter(name => typeof name === 'string')
+      .map(name => name.trim())
+      .filter(Boolean)
+
+    if (names.length) {
+      normalized.observableDeclarationMethodNames = names
+    }
+  }
+
+  return normalized
+}
+
+/**
+ * Finds member definition in an object passed to `*.extend({...})`.
+ * It prioritizes `defaults.member`, then method/property `member`.
+ * @param {Object} astRoot Parsed document.
+ * @param {string} memberName Member to look for.
+ * @returns {Object} Range of the matching property key.
+ * @memberof codeParser
+ */
+function findExtendMemberDefinition (astRoot, memberName, options) {
+  const {
+    observableDeclarationMethodNames
+  } = normalizeExtendMemberResolutionOptions(options)
+  let loc
+
+  try {
+    walk(astRoot, {
+      CallExpression(node) {
+        if (!isExtendCall(node)) {
+          return
+        }
+
+        const extendObject = findExtendObject(node)
+        if (!extendObject) return
+
+        const bodyProperties = extendObject.properties || []
+
+        const defaults = bodyProperties.find(property => {
+          return property && property.type === 'Property' &&
+            getPropertyName(property) === 'defaults'
+        })
+
+        if (defaults && defaults.value && defaults.value.type === 'ObjectExpression') {
+          const defaultProperty = (defaults.value.properties || []).find(property => {
+            return property && property.type === 'Property' &&
+              getPropertyName(property) === memberName
+          })
+
+          if (defaultProperty && defaultProperty.key && defaultProperty.key.loc) {
+            loc = defaultProperty.key.loc
+            throw 0
+          }
+        }
+
+        const declareObservables = bodyProperties.find(property => {
+          if (!(property && property.type === 'Property' &&
+            observableDeclarationMethodNames.includes(getPropertyName(property)))) {
+            return false
+          }
+
+          return property.method ||
+            property.value && (property.value.type === 'FunctionExpression' ||
+              property.value.type === 'ArrowFunctionExpression')
+        })
+
+        const declareObservablesFunction = declareObservables &&
+          (declareObservables.value && declareObservables.value.type !== 'Identifier'
+            ? declareObservables.value
+            : declareObservables)
+        if (declareObservablesFunction && declareObservablesFunction.body) {
+          const observableProperty = findObservableAssignmentInFunction(
+            declareObservablesFunction,
+            memberName
+          )
+
+          if (observableProperty) {
+            loc = observableProperty
+            throw 0
+          }
+        }
+
+        const methodProperty = bodyProperties.find(property => {
+          if (!(property && property.type === 'Property' && getPropertyName(property) === memberName)) {
+            return false
+          }
+
+          return property.method ||
+            property.value && (property.value.type === 'FunctionExpression' ||
+              property.value.type === 'ArrowFunctionExpression')
+        })
+
+        if (methodProperty && methodProperty.key && methodProperty.key.loc) {
+          loc = methodProperty.key.loc
+          throw 0
+        }
+      }
+    })
+  } catch (err) {
+    if (typeof err !== 'number') throw err
+  }
+
+  return loc
+}
+
+/**
  * Returns AST nodes for the identifier the expression around it, or nothing,
  * if there is no identifier within the specified range.
  * Sets `parent` properties pointing to parent nodes down to the identifier,
@@ -141,5 +366,11 @@ function findIdentifierOrLiteralWithinRange (astRoot, range) {
 }
 
 module.exports = {
-  findAllIdentifiers, findIdentifier, findIdentifierOrLiteralWithinRange, parseModule
+  findAllIdentifiers,
+  findExtendMemberDefinition,
+  findIdentifier,
+  findFirstExtendCall,
+  findFirstExtendBaseIdentifier,
+  findIdentifierOrLiteralWithinRange,
+  parseModule
 }
