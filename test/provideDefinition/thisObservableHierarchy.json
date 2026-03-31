@@ -1,0 +1,90 @@
+[
+  {
+    "name": "this.localObservable resolves to local declareObservables assignment",
+    "source": {
+      "position": {
+        "line": 10,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "thisObservableHierarchy.js",
+      "range": {
+        "start": {
+          "line": 7,
+          "character": 11
+        },
+        "end": {
+          "line": 7,
+          "character": 26
+        }
+      }
+    }
+  },
+  {
+    "name": "this.parentObservable resolves in parent declareObservables",
+    "source": {
+      "position": {
+        "line": 11,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "moduleObservableParent.js",
+      "range": {
+        "start": {
+          "line": 4,
+          "character": 11
+        },
+        "end": {
+          "line": 4,
+          "character": 27
+        }
+      }
+    }
+  },
+  {
+    "name": "this.pendingState resolves in base declareObservables",
+    "source": {
+      "position": {
+        "line": 12,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "moduleObservableBase.js",
+      "range": {
+        "start": {
+          "line": 4,
+          "character": 11
+        },
+        "end": {
+          "line": 4,
+          "character": 23
+        }
+      }
+    }
+  },
+  {
+    "name": "this.getObservable still resolves in parent chain methods",
+    "source": {
+      "position": {
+        "line": 13,
+        "character": 11
+      }
+    },
+    "target": {
+      "file": "moduleObservableBase.js",
+      "range": {
+        "start": {
+          "line": 7,
+          "character": 4
+        },
+        "end": {
+          "line": 7,
+          "character": 17
+        }
+      }
+    }
+  }
+]

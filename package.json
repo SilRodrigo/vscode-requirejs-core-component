@@ -82,7 +82,7 @@
     "require",
     "amd"
   ],
-  "publisher": "Rodrigo Silva",
+  "publisher": "silRodrigo",
   "icon": "logo.png",
   "engines": {
     "vscode": "^1.5.0"

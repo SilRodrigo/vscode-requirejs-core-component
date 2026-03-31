@@ -166,6 +166,48 @@ function getPropertyName (property) {
   if (key.type === 'Literal' && typeof key.value === 'string') return key.value
 }
 
+function isExtendCall (node) {
+  const { callee } = node || {}
+
+  return callee && callee.type === 'MemberExpression' &&
+    callee.computed === false && callee.property &&
+    callee.property.type === 'Identifier' && callee.property.name === 'extend'
+}
+
+function findExtendObject (callExpression) {
+  const { arguments: args = [] } = callExpression || {}
+
+  return args.find(argument => argument && argument.type === 'ObjectExpression')
+}
+
+function findObservableAssignmentInFunction (functionNode, memberName) {
+  let loc
+
+  try {
+    walk(functionNode.body, {
+      AssignmentExpression(node) {
+        const { left, operator } = node
+
+        if (operator !== '=' || !(left && left.type === 'MemberExpression' && left.computed === false)) {
+          return
+        }
+
+        const { object, property } = left
+        if (object && object.type === 'ThisExpression' &&
+          property && property.type === 'Identifier' && property.name === memberName &&
+          property.loc) {
+          loc = property.loc
+          throw 0
+        }
+      }
+    })
+  } catch (err) {
+    if (typeof err !== 'number') throw err
+  }
+
+  return loc
+}
+
 /**
  * Finds member definition in an object passed to `*.extend({...})`.
  * It prioritizes `defaults.member`, then method/property `member`.
@@ -180,15 +222,11 @@ function findExtendMemberDefinition (astRoot, memberName) {
   try {
     walk(astRoot, {
       CallExpression(node) {
-        const { callee, arguments: args = [] } = node
-
-        if (!(callee && callee.type === 'MemberExpression' &&
-          callee.computed === false && callee.property &&
-          callee.property.type === 'Identifier' && callee.property.name === 'extend')) {
+        if (!isExtendCall(node)) {
           return
         }
 
-        const extendObject = args.find(argument => argument && argument.type === 'ObjectExpression')
+        const extendObject = findExtendObject(node)
         if (!extendObject) return
 
         const bodyProperties = extendObject.properties || []
@@ -206,6 +244,33 @@ function findExtendMemberDefinition (astRoot, memberName) {
 
           if (defaultProperty && defaultProperty.key && defaultProperty.key.loc) {
             loc = defaultProperty.key.loc
+            throw 0
+          }
+        }
+
+        const declareObservables = bodyProperties.find(property => {
+          if (!(property && property.type === 'Property' &&
+            getPropertyName(property) === 'declareObservables')) {
+            return false
+          }
+
+          return property.method ||
+            property.value && (property.value.type === 'FunctionExpression' ||
+              property.value.type === 'ArrowFunctionExpression')
+        })
+
+        const declareObservablesFunction = declareObservables &&
+          (declareObservables.value && declareObservables.value.type !== 'Identifier'
+            ? declareObservables.value
+            : declareObservables)
+        if (declareObservablesFunction && declareObservablesFunction.body) {
+          const observableProperty = findObservableAssignmentInFunction(
+            declareObservablesFunction,
+            memberName
+          )
+
+          if (observableProperty) {
+            loc = observableProperty
             throw 0
           }
         }
