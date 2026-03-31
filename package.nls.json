@@ -20,6 +20,8 @@
   "requirejs.config.excludeFileCompletionExtensions": "The specified file extensions will not be included for module path completion",
   "requirejs.config.modulePath": "Module path relative to workspace root",
   "requirejs.config.onlyNavigateToFile": "When set to true, it will prevent the final search for the identifier in the landing module and instead just reference the file.",
+  "requirejs.config.lookupMaxLevels": "Maximum number of parent levels to search in inherited modules for module identifiers, this.member and this._super lookups",
+  "requirejs.config.observableDeclarationMethodNames": "Method names where observable assignments like this.member = ... should be recognized",
   "requirejs.config.pluginExtensions": "Assigns default file extensions to target module paths used with RequireJS plugins",
   "requirejs.config.moduleProcessingBatchSize": "How many documents should be opened and searched before cancelling of the operation is possible",
   "requirejs.command.goToDefinitionModule.title": "Go to Definition Module",

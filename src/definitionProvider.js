@@ -8,8 +8,11 @@ const {
 const ModuleAnalyser = require('./moduleAnalyser')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 
-const MAX_PARENT_LOOKUP_DEPTH = 3
-const MAX_EXTEND_MEMBER_PARENT_LEVELS = 3
+const DEFAULT_LOOKUP_MAX_LEVELS = 3
+
+function normalizeLookupMaxLevels (value, fallback) {
+  return Number.isInteger(value) && value >= 0 ? value : fallback
+}
 
 /**
  * Provides the location of the definition of a selected identifier, if it is
@@ -24,6 +27,36 @@ class DefinitionProvider {
     hostOrCreateDisposable(this, 'moduleAnalyser', ModuleAnalyser, moduleAnalyser)
   }
 
+  getSettings () {
+    return workspace.getConfiguration('requireModuleSupport')
+  }
+
+  getLookupMaxLevels () {
+    const settings = this.getSettings()
+    const configured = settings.get('lookupMaxLevels')
+
+    if (Number.isInteger(configured) && configured >= 0) {
+      return configured
+    }
+
+    // Backward compatibility with previous setting names.
+    const legacy = settings.get('extendMemberLookupMaxLevels')
+    if (Number.isInteger(legacy) && legacy >= 0) {
+      return legacy
+    }
+
+    const oldLegacy = settings.get('parentLookupMaxLevels')
+    return normalizeLookupMaxLevels(oldLegacy, DEFAULT_LOOKUP_MAX_LEVELS)
+  }
+
+  getExtendMemberResolutionOptions () {
+    const settings = this.getSettings()
+
+    return {
+      observableDeclarationMethodNames: settings.get('observableDeclarationMethodNames') || ['declareObservables']
+    }
+  }
+
   /**
    * Diverges the search to the given module
    * @param {string} filePath File-system path of the target module
@@ -33,11 +66,12 @@ class DefinitionProvider {
   searchModule (filePath, searchFor, lookupState) {
     const state = lookupState || {
       depth: 0,
-      visited: new Set()
+      visited: new Set(),
+      maxDepth: this.getLookupMaxLevels()
     }
-    const { depth, visited } = state
+    const { depth, visited, maxDepth } = state
 
-    if (depth >= MAX_PARENT_LOOKUP_DEPTH || visited.has(filePath)) {
+    if (depth > maxDepth || visited.has(filePath)) {
       return Promise.resolve()
     }
     visited.add(filePath)
@@ -66,7 +100,8 @@ class DefinitionProvider {
 
         const parentLocation = await this.searchMethodInParentModule(document, astRoot, searchFor, {
           depth: depth + 1,
-          visited
+          visited,
+          maxDepth
         })
         if (parentLocation) {
           return parentLocation
@@ -112,11 +147,13 @@ class DefinitionProvider {
   searchExtendMemberInHierarchy (filePath, memberName, lookupState) {
     const state = lookupState || {
       depth: 0,
-      visited: new Set()
+      visited: new Set(),
+      maxDepth: this.getLookupMaxLevels(),
+      resolutionOptions: this.getExtendMemberResolutionOptions()
     }
-    const { depth, visited } = state
+    const { depth, visited, maxDepth, resolutionOptions } = state
 
-    if (depth > MAX_EXTEND_MEMBER_PARENT_LEVELS || visited.has(filePath)) {
+    if (depth > maxDepth || visited.has(filePath)) {
       return Promise.resolve()
     }
     visited.add(filePath)
@@ -127,7 +164,7 @@ class DefinitionProvider {
     return newDocument.then(async document => {
       if (document.languageId === 'javascript' || document.languageId === 'javascriptreact') {
         const astRoot = this.moduleAnalyser.getParsedModule(document)
-        const range = findExtendMemberDefinition(astRoot, memberName)
+        const range = findExtendMemberDefinition(astRoot, memberName, resolutionOptions)
 
         if (range) {
           return new Location(newUri, new Range(
@@ -148,7 +185,9 @@ class DefinitionProvider {
             if (parentFilePath) {
               return this.searchExtendMemberInHierarchy(parentFilePath, memberName, {
                 depth: depth + 1,
-                visited
+                visited,
+                maxDepth,
+                resolutionOptions
               })
             }
           }

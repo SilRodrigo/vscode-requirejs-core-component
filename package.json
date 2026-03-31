@@ -1,8 +1,8 @@
 {
   "name": "vscode-requirejs",
-  "displayName": "CoreComponent Module Support",
-  "description": "Looks up modules and identifiers in AMD projects using RequireJS.",
-  "version": "2.1.2",
+  "displayName": "Core Component Pattern Support",
+  "description": "Navigation and symbol support for Magento 2 Core Component modules built with RequireJS/AMD.",
+  "version": "1.0.0",
   "homepage": "https://github.com/SilRodrigo/vscode-requirejs-core-component#readme",
   "author": {
     "name": "Rodrigo Silva",
@@ -213,6 +213,19 @@
           "type": "boolean",
           "default": false,
           "description": "%requirejs.config.onlyNavigateToFile%"
+        },
+        "requireModuleSupport.lookupMaxLevels": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 3,
+          "description": "%requirejs.config.lookupMaxLevels%"
+        },
+        "requireModuleSupport.observableDeclarationMethodNames": {
+          "type": "array",
+          "default": [
+            "declareObservables"
+          ],
+          "description": "%requirejs.config.observableDeclarationMethodNames%"
         },
         "requireModuleSupport.pluginExtensions": {
           "type": "object",

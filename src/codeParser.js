@@ -208,6 +208,27 @@ function findObservableAssignmentInFunction (functionNode, memberName) {
   return loc
 }
 
+function normalizeExtendMemberResolutionOptions (options = {}) {
+  const normalized = {
+    observableDeclarationMethodNames: ['declareObservables']
+  }
+
+  const { observableDeclarationMethodNames } = options
+
+  if (Array.isArray(observableDeclarationMethodNames)) {
+    const names = observableDeclarationMethodNames
+      .filter(name => typeof name === 'string')
+      .map(name => name.trim())
+      .filter(Boolean)
+
+    if (names.length) {
+      normalized.observableDeclarationMethodNames = names
+    }
+  }
+
+  return normalized
+}
+
 /**
  * Finds member definition in an object passed to `*.extend({...})`.
  * It prioritizes `defaults.member`, then method/property `member`.
@@ -216,7 +237,10 @@ function findObservableAssignmentInFunction (functionNode, memberName) {
  * @returns {Object} Range of the matching property key.
  * @memberof codeParser
  */
-function findExtendMemberDefinition (astRoot, memberName) {
+function findExtendMemberDefinition (astRoot, memberName, options) {
+  const {
+    observableDeclarationMethodNames
+  } = normalizeExtendMemberResolutionOptions(options)
   let loc
 
   try {
@@ -250,7 +274,7 @@ function findExtendMemberDefinition (astRoot, memberName) {
 
         const declareObservables = bodyProperties.find(property => {
           if (!(property && property.type === 'Property' &&
-            getPropertyName(property) === 'declareObservables')) {
+            observableDeclarationMethodNames.includes(getPropertyName(property)))) {
             return false
           }
 
