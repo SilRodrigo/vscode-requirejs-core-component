@@ -41,7 +41,7 @@ The extension is optimized for patterns commonly used in Magento 2 frontend modu
 Install from a local VSIX package:
 
 ```bash
-code --install-extension ./vscode-requirejs-1.0.0.vsix --force
+code --install-extension ./vscode-requirejs-1.0.1.vsix --force
 ```
 
 If your VSIX file has a different name, replace it in the command above.
@@ -71,6 +71,10 @@ Core Component navigation settings:
 - `requireModuleSupport.observableDeclarationMethodNames`
   - Method names where assignments like `this.member = ...` are treated as observable declarations.
   - Example: `["declareObservables"]`
+- `requireModuleSupport.mixinConfigSearchPatterns`
+  - Workspace-relative glob patterns used to find `requirejs-config.js` files when listing applied mixins.
+  - Default: `["app/design/frontend/**/requirejs-config.js"]`
+  - Example: `["app/design/frontend/**/requirejs-config.js", "app/code/**/requirejs-config.js"]`
 
 Conventions that are fixed (not configurable):
 
@@ -79,16 +83,6 @@ Conventions that are fixed (not configurable):
 - Member fallback order remains: `defaults` -> observable declarations -> methods.
 
 You can set these in VS Code settings JSON.
-
-## Required Project Files
-
-In the Magento 2 project where this extension will be used, create a `.vscode` folder with these two files:
-
-```text
-.vscode/
-  settings.json
-  vscode-require-config.js
-```
 
 ### `.vscode/settings.json`
 
@@ -120,6 +114,17 @@ This file should expose the RequireJS paths used by the Magento 2 frontend being
 
 Adjust the aliases and paths to match the modules available in your Magento 2 codebase.
 
+## Show Applied Mixins Requirement
+
+For `Show Applied Mixins` to work correctly and open the selected mixin files, the involved module aliases must be resolvable through `requireModuleSupport.configFile`.
+
+In practice, this means:
+
+- the current module must be reachable through the RequireJS paths configured in `.vscode/vscode-require-config.js`
+- the mixin module paths found in `requirejs-config.js` must also be mapped there
+
+If the aliases are not configured, the extension may still detect the mixin relationship, but it will not be able to resolve and open the target file reliably.
+
 ## Development
 
 Build the extension output:
@@ -136,4 +141,10 @@ npx @vscode/vsce package
 
 ## License
 
-Licensed under the MIT license. See `LICENSE`.
+Copyright (c) 2026 Rodrigo Silva<br>
+Copyright (c) 2020-2022 Ferdinand Prantl<br>
+Copyright (c) 2020      Ali Naci Erdem
+
+Licensed under the [MIT license].
+
+[MIT license]: ./LICENSE

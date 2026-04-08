@@ -2,6 +2,18 @@
 
 All notable changes to this fork are documented in this file.
 
+## [1.0.1] - 2026-04-01
+
+### Added
+
+- New command: Show Applied Mixins.
+- The command scans all `requirejs-config.js` files in the workspace and lists mixins applied to the current module.
+- Quick Pick navigation to open the selected mixin file.
+
+### Changed
+
+- The Show Applied Mixins command is shown in context menu and command palette only for files recognized as Core Component modules (`.extend(...)`).
+
 ## [1.0.0] - 2026-03-31
 
 ### Fork

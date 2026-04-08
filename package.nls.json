@@ -22,8 +22,10 @@
   "requirejs.config.onlyNavigateToFile": "When set to true, it will prevent the final search for the identifier in the landing module and instead just reference the file.",
   "requirejs.config.lookupMaxLevels": "Maximum number of parent levels to search in inherited modules for module identifiers, this.member and this._super lookups",
   "requirejs.config.observableDeclarationMethodNames": "Method names where observable assignments like this.member = ... should be recognized",
+  "requirejs.config.mixinConfigSearchPatterns": "Workspace-relative glob patterns used to search requirejs-config.js files for applied mixins",
   "requirejs.config.pluginExtensions": "Assigns default file extensions to target module paths used with RequireJS plugins",
   "requirejs.config.moduleProcessingBatchSize": "How many documents should be opened and searched before cancelling of the operation is possible",
   "requirejs.command.goToDefinitionModule.title": "Go to Definition Module",
-  "requirejs.command.renameExportedSymbol.title": "Rename Exported Symbol"
+  "requirejs.command.renameExportedSymbol.title": "Rename Exported Symbol",
+  "requirejs.command.showAppliedMixins.title": "Show Applied Mixins"
 }

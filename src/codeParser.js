@@ -159,6 +159,64 @@ function findFirstExtendBaseIdentifier (astRoot) {
   return name
 }
 
+/**
+ * Finds RequireJS mixin mappings in a Magento-style `requirejs-config.js`.
+ * @param {Object} astRoot Parsed document.
+ * @returns {Array} Mixin mappings as objects containing targetModulePath,
+ * mixinModulePath, enabled and loc.
+ * @memberof codeParser
+ */
+function findRequireJsMixinMappings (astRoot) {
+  const mappings = []
+
+  walk(astRoot, {
+    Property(node) {
+      if (getPropertyName(node) !== 'mixins' ||
+        !(node.value && node.value.type === 'ObjectExpression')) {
+        return
+      }
+
+      (node.value.properties || []).forEach(targetProperty => {
+        if (!(targetProperty && targetProperty.type === 'Property')) {
+          return
+        }
+
+        const targetModulePath = getPropertyName(targetProperty)
+        const mixinContainer = targetProperty.value
+
+        if (!targetModulePath || !(mixinContainer && mixinContainer.type === 'ObjectExpression')) {
+          return
+        }
+
+        (mixinContainer.properties || []).forEach(mixinProperty => {
+          if (!(mixinProperty && mixinProperty.type === 'Property')) {
+            return
+          }
+
+          const mixinModulePath = getPropertyName(mixinProperty)
+          const { value } = mixinProperty
+          let enabled = true
+
+          if (value && value.type === 'Literal' && typeof value.value === 'boolean') {
+            enabled = value.value
+          }
+
+          if (mixinModulePath) {
+            mappings.push({
+              targetModulePath,
+              mixinModulePath,
+              enabled,
+              loc: mixinProperty.key && mixinProperty.key.loc
+            })
+          }
+        })
+      })
+    }
+  })
+
+  return mappings
+}
+
 function getPropertyName (property) {
   const { key, computed } = property
   if (!key || computed) return undefined
@@ -371,6 +429,7 @@ module.exports = {
   findIdentifier,
   findFirstExtendCall,
   findFirstExtendBaseIdentifier,
+  findRequireJsMixinMappings,
   findIdentifierOrLiteralWithinRange,
   parseModule
 }

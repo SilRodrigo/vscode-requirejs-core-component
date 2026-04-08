@@ -54,11 +54,13 @@ test('activate should register expected objects', () => {
   // registering the RequireJS hover provider,
   // adding the "Go To Definition Module" command,
   // adding the "Rename Module Export" command,
+  // adding the "Show Applied Mixins" command,
+  // tracking active editor/context changes,
   // registering for configuration changes and the following
   // objects (moduleResolver, moduleAnalyser, folderCrawler,
   // definitionProvider, referenceProvider, completionItemProvider,
   // hoverProvider and renameProvider).
-  assert.equal(subscriptions.length, 17)
+  assert.equal(subscriptions.length, 20)
   assert.ok(subscriptions[0] instanceof StatusNotifier)
   assert.ok(subscriptions[1] instanceof ModuleResolver)
   assert.ok(subscriptions[2] instanceof ModuleAnalyser)
@@ -120,4 +122,12 @@ test('activate should register expected objects', () => {
   assert.equal(renameExportedSymbolArgs[0], 'requireModuleSupport.renameExportedSymbol')
   assert.equal(typeof renameExportedSymbolArgs[1], 'function')
   assert.equal(renameExportedSymbolArgs[1].name, 'bound renameExportedSymbol')
+
+  const showAppliedMixinsArgs = registerTextEditorCommandStub.getCall(2).args
+
+  assert.ok(Array.isArray(showAppliedMixinsArgs))
+  assert.equal(showAppliedMixinsArgs.length, 2)
+  assert.equal(showAppliedMixinsArgs[0], 'requireModuleSupport.showAppliedMixins')
+  assert.equal(typeof showAppliedMixinsArgs[1], 'function')
+  assert.equal(showAppliedMixinsArgs[1].name, 'bound showAppliedMixins')
 })
