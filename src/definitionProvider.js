@@ -183,7 +183,7 @@ class DefinitionProvider {
               .resolveModulePath(dependency.source, document.fileName)
 
             if (parentFilePath) {
-              return this.searchExtendMemberInHierarchy(parentFilePath, memberName, {
+              return await this.searchExtendMemberInHierarchy(parentFilePath, memberName, {
                 depth: depth + 1,
                 visited,
                 maxDepth,
@@ -226,7 +226,7 @@ class DefinitionProvider {
       return
     }
 
-    return this.searchModule(parentFilePath, searchFor, state)
+    return await this.searchModule(parentFilePath, searchFor, state)
   }
 
   /**

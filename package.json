@@ -1,8 +1,8 @@
 {
-  "name": "vscode-requirejs",
+  "name": "vscode-requirejs-core-component",
   "displayName": "Core Component Pattern Support",
   "description": "Navigation and symbol support for Magento 2 Core Component modules built with RequireJS/AMD.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "https://github.com/SilRodrigo/vscode-requirejs-core-component#readme",
   "author": {
     "name": "Rodrigo Silva",
@@ -126,6 +126,16 @@
           "type": "boolean",
           "default": true,
           "description": "%requirejs.config.enableRenameProvider%"
+        },
+        "requireModuleSupport.enableMixinCodeLensProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableMixinCodeLensProvider%"
+        },
+        "requireModuleSupport.enableMixinDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableMixinDecorations%"
         },
         "requireModuleSupport.showGoToDefinitionModuleCommand": {
           "type": "boolean",

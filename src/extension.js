@@ -14,6 +14,8 @@ const ReferenceProvider = require('./referenceProvider')
 const CompletionItemProvider = require('./completionItemProvider')
 const HoverProvider = require('./hoverProvider')
 const RenameProvider = require('./renameProvider')
+const MixinCodeLensProvider = require('./mixinCodeLensProvider')
+const MixinDecorations = require('./mixinDecorations')
 const goToDefinitionModule = require('./goToDefinitionModule')
 const renameExportedSymbol = require('./renameExportedSymbol')
 const showAppliedMixins = require('./showAppliedMixins')
@@ -104,7 +106,8 @@ function configureExtension (context) {
     referenceProvider,
     completionItemProvider,
     hoverProvider,
-    renameProvider
+    renameProvider,
+    mixinCodeLensProvider
   } = context.providers
   const language = [
     { scheme: 'file', language: 'javascript' },
@@ -126,6 +129,9 @@ function configureExtension (context) {
   configureProvider(context, 'RenameProvider', () =>
     languages.registerRenameProvider(
       language, renameProvider))
+  configureProvider(context, 'MixinCodeLensProvider', () =>
+    languages.registerCodeLensProvider(
+      language, mixinCodeLensProvider))
 
   // Allow enabling or disabling or menu items or keyboard bindings.
   configureContextFlag('showGoToDefinitionModuleCommand')
@@ -197,6 +203,8 @@ module.exports = {
     const completionItemProvider = new CompletionItemProvider(moduleResolver, folderCrawler)
     const hoverProvider = new HoverProvider(moduleResolver)
     const renameProvider = new RenameProvider(referenceProvider)
+    const mixinCodeLensProvider = new MixinCodeLensProvider(moduleResolver)
+    const mixinDecorations = new MixinDecorations(moduleResolver)
     const configurationContext = { subscriptions: subscriptions }
 
     configurationContext.providers = {
@@ -204,7 +212,8 @@ module.exports = {
       referenceProvider: referenceProvider,
       completionItemProvider: completionItemProvider,
       hoverProvider: hoverProvider,
-      renameProvider: renameProvider
+      renameProvider: renameProvider,
+      mixinCodeLensProvider: mixinCodeLensProvider
     }
 
     const configurationChange = workspace.onDidChangeConfiguration(() =>
@@ -224,7 +233,8 @@ module.exports = {
     subscriptions.push(
       statusNotifier, moduleResolver, moduleAnalyser, folderCrawler,
       definitionProvider, referenceProvider, completionItemProvider,
-      hoverProvider, renameProvider, configurationChange,
+      hoverProvider, renameProvider, mixinCodeLensProvider, mixinDecorations,
+      configurationChange,
       activeEditorChange, activeDocumentChange,
       // Registering commands does not show them in UI immediately
       // and they do not disturb, when registered all the time.
@@ -234,7 +244,7 @@ module.exports = {
       commands.registerTextEditorCommand(
         'requireModuleSupport.renameExportedSymbol',
         renameExportedSymbol.bind(null, renameProvider)),
-      commands.registerTextEditorCommand(
+      commands.registerCommand(
         'requireModuleSupport.showAppliedMixins',
         showAppliedMixins.bind(null, moduleResolver)))
 

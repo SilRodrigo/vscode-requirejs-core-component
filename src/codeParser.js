@@ -238,6 +238,55 @@ function findExtendObject (callExpression) {
   return args.find(argument => argument && argument.type === 'ObjectExpression')
 }
 
+/**
+ * Finds method definitions in objects passed to `*.extend({...})`.
+ * @param {Object} astRoot Parsed document.
+ * @returns {Array} Method definitions as objects with `name` and `loc`.
+ * @memberof codeParser
+ */
+function findExtendMethodDefinitions (astRoot) {
+  const methods = []
+
+  walk(astRoot, {
+    CallExpression(node) {
+      if (!isExtendCall(node)) {
+        return
+      }
+
+      const extendObject = findExtendObject(node)
+      if (!extendObject) {
+        return
+      }
+
+      const properties = extendObject.properties || []
+
+      properties.forEach(property => {
+        if (!(property && property.type === 'Property')) {
+          return
+        }
+
+        const name = getPropertyName(property)
+        if (!name) {
+          return
+        }
+
+        const isMethod = property.method ||
+          property.value && (property.value.type === 'FunctionExpression' ||
+            property.value.type === 'ArrowFunctionExpression')
+
+        if (isMethod && property.key && property.key.loc) {
+          methods.push({
+            name,
+            loc: property.key.loc
+          })
+        }
+      })
+    }
+  })
+
+  return methods
+}
+
 function findObservableAssignmentInFunction (functionNode, memberName) {
   let loc
 
@@ -426,6 +475,7 @@ function findIdentifierOrLiteralWithinRange (astRoot, range) {
 module.exports = {
   findAllIdentifiers,
   findExtendMemberDefinition,
+  findExtendMethodDefinitions,
   findIdentifier,
   findFirstExtendCall,
   findFirstExtendBaseIdentifier,

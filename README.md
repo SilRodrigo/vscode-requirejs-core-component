@@ -27,6 +27,10 @@ This fork is maintained by Rodrigo Silva and is focused on Magento 2 Core Compon
     1. `defaults`
     2. `declareObservables`
     3. methods
+- Mixin support:
+  - CodeLens indicators showing count of mixins per method (`Mixins: N`).
+  - Automatic detection of methods overridden by applied mixins.
+  - `Show Applied Mixins` command to list all mixins affecting current module.
 
 ## Magento 2 Core Component Focus
 
@@ -41,7 +45,7 @@ The extension is optimized for patterns commonly used in Magento 2 frontend modu
 Install from a local VSIX package:
 
 ```bash
-code --install-extension ./vscode-requirejs-1.0.1.vsix --force
+code --install-extension ./vscode-requirejs-core-component-1.0.2.vsix --force
 ```
 
 If your VSIX file has a different name, replace it in the command above.
@@ -75,6 +79,19 @@ Core Component navigation settings:
   - Workspace-relative glob patterns used to find `requirejs-config.js` files when listing applied mixins.
   - Default: `["app/design/frontend/**/requirejs-config.js"]`
   - Example: `["app/design/frontend/**/requirejs-config.js", "app/code/**/requirejs-config.js"]`
+
+Mixin-related settings:
+
+- `requireModuleSupport.enableMixinCodeLensProvider`
+  - Shows CodeLens labels displaying the count of mixins overriding each method (`Mixins: N`).
+  - Automatically updates as you edit files with mixin overrides.
+  - Default: `true`
+  - Example: `false` to disable
+- `requireModuleSupport.enableMixinDecorations`
+  - Highlights methods overridden by applied mixins with a subtle background color.
+  - Hover over highlighted methods to see the list of applied mixins.
+  - Default: `true`
+  - Example: `false` to disable
 
 Conventions that are fixed (not configurable):
 

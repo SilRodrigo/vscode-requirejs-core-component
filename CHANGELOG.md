@@ -2,6 +2,21 @@
 
 All notable changes to this fork are documented in this file.
 
+## [1.0.2] - 2026-04-08
+
+### Added
+
+- CodeLens labels displaying count of mixins overriding each method (`Mixins: N`).
+- Visual highlights on methods overridden by applied mixins with hover details showing mixin list.
+- New parser helper to collect method definitions from `.extend({...})` objects.
+- New setting: `requireModuleSupport.enableMixinCodeLensProvider` (default: true).
+- New setting: `requireModuleSupport.enableMixinDecorations` (default: true).
+
+### Changed
+
+- Extracted shared applied-mixins lookup logic to reusable helper module.
+- Reused shared mixin discovery in `Show Applied Mixins`, CodeLens provider, and visual decorations.
+
 ## [1.0.1] - 2026-04-01
 
 ### Added

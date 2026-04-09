@@ -11,22 +11,28 @@ const ReferenceProvider = require('../src/referenceProvider')
 const CompletionItemProvider = require('../src/completionItemProvider')
 const HoverProvider = require('../src/hoverProvider')
 const RenameProvider = require('../src/renameProvider')
+const MixinCodeLensProvider = require('../src/mixinCodeLensProvider')
+const MixinDecorations = require('../src/mixinDecorations')
 const registerDefinitionProviderStub = sinon.stub()
 const registerReferenceProviderStub = sinon.stub()
 const registerCompletionItemProviderStub = sinon.stub()
 const registerHoverProviderStub = sinon.stub()
 const registerRenameProviderStub = sinon.stub()
+const registerCodeLensProviderStub = sinon.stub()
 const registerTextEditorCommandStub = sinon.stub()
+const registerCommandStub = sinon.stub()
 const vscodeStub = {
   languages: {
     registerDefinitionProvider: registerDefinitionProviderStub,
     registerReferenceProvider: registerReferenceProviderStub,
     registerCompletionItemProvider: registerCompletionItemProviderStub,
     registerHoverProvider: registerHoverProviderStub,
-    registerRenameProvider: registerRenameProviderStub
+    registerRenameProvider: registerRenameProviderStub,
+    registerCodeLensProvider: registerCodeLensProviderStub
   },
   commands: {
     registerTextEditorCommand: registerTextEditorCommandStub,
+    registerCommand: registerCommandStub,
     executeCommand: function () {
       return undefined
     }
@@ -51,16 +57,17 @@ test('activate should register expected objects', () => {
   // Registering the RequireJS definition provider,
   // registering the RequireJS reference provider,
   // registering the RequireJS completion item provider,
-  // registering the RequireJS hover provider,
-  // adding the "Go To Definition Module" command,
-  // adding the "Rename Module Export" command,
-  // adding the "Show Applied Mixins" command,
+  // registering the RequireJS hover provider and rename provider,
+  // registering the mixin CodeLens provider and visual decorators,
+  // adding the \"Go To Definition Module\" command,
+  // adding the \"Rename Module Export\" command,
+  // adding the \"Show Applied Mixins\" command,
   // tracking active editor/context changes,
   // registering for configuration changes and the following
   // objects (moduleResolver, moduleAnalyser, folderCrawler,
   // definitionProvider, referenceProvider, completionItemProvider,
-  // hoverProvider and renameProvider).
-  assert.equal(subscriptions.length, 20)
+  // hoverProvider, renameProvider, mixinCodeLensProvider and mixinDecorations).
+  assert.equal(subscriptions.length, 23)
   assert.ok(subscriptions[0] instanceof StatusNotifier)
   assert.ok(subscriptions[1] instanceof ModuleResolver)
   assert.ok(subscriptions[2] instanceof ModuleAnalyser)
@@ -70,6 +77,8 @@ test('activate should register expected objects', () => {
   assert.ok(subscriptions[6] instanceof CompletionItemProvider)
   assert.ok(subscriptions[7] instanceof HoverProvider)
   assert.ok(subscriptions[8] instanceof RenameProvider)
+  assert.ok(subscriptions[9] instanceof MixinCodeLensProvider)
+  assert.ok(subscriptions[10] instanceof MixinDecorations)
 
   const definitionProviderArgs = registerDefinitionProviderStub.getCall(0).args
 
@@ -107,6 +116,13 @@ test('activate should register expected objects', () => {
   assert.deepEqual(renameProviderArgs[0], language)
   assert.ok(renameProviderArgs[1] instanceof RenameProvider)
 
+  const codeLensProviderArgs = registerCodeLensProviderStub.getCall(0).args
+
+  assert.ok(Array.isArray(codeLensProviderArgs))
+  assert.equal(codeLensProviderArgs.length, 2)
+  assert.deepEqual(codeLensProviderArgs[0], language)
+  assert.ok(codeLensProviderArgs[1] instanceof MixinCodeLensProvider)
+
   const goToDefinitionModuleArgs = registerTextEditorCommandStub.getCall(0).args
 
   assert.ok(Array.isArray(goToDefinitionModuleArgs))
@@ -123,7 +139,7 @@ test('activate should register expected objects', () => {
   assert.equal(typeof renameExportedSymbolArgs[1], 'function')
   assert.equal(renameExportedSymbolArgs[1].name, 'bound renameExportedSymbol')
 
-  const showAppliedMixinsArgs = registerTextEditorCommandStub.getCall(2).args
+  const showAppliedMixinsArgs = registerCommandStub.getCall(0).args
 
   assert.ok(Array.isArray(showAppliedMixinsArgs))
   assert.equal(showAppliedMixinsArgs.length, 2)

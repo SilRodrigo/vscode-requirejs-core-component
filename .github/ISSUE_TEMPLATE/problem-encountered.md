@@ -6,7 +6,7 @@ labels: ''
 assignees: ''
 ---
 
-**What is the version of `vscode-requirejs` that you use?**
+**What is the version of `vscode-requirejs-core-component` that you use?**
 
 You can find the extension information in the Extensions side bar (`Cmd+Shift+X`) by searching for "@installed oscript".
 
