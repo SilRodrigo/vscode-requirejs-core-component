@@ -4,6 +4,7 @@ const {
   Range,
   Position
 } = require('vscode')
+const { dirname, join } = require('path')
 const {
   parseModule,
   findFirstExtendCall,
@@ -39,6 +40,22 @@ function convertLocToRange (loc) {
     new Position(loc.start.line - 1, loc.start.column),
     new Position(loc.end.line - 1, loc.end.column)
   )
+}
+
+async function findNearestMixinConfigUri (filePath) {
+  for (let directory = dirname(filePath);; directory = dirname(directory)) {
+    const configFilePath = join(directory, 'requirejs-config.js')
+
+    try {
+      await workspace.fs.stat(Uri.file(configFilePath))
+      return Uri.file(configFilePath)
+    } catch (_error) {
+      const parentDirectory = dirname(directory)
+      if (parentDirectory === directory) {
+        return
+      }
+    }
+  }
 }
 
 async function getPreferredMixinLocation (filePath) {
@@ -113,8 +130,46 @@ async function findAppliedMixins (moduleResolver, currentFilePath, cancellationT
   })
 }
 
+async function findMixinsTargets (moduleResolver, mixinFilePath) {
+  const modulePaths = moduleResolver.unresolveFilePath(mixinFilePath)
+
+  if (!modulePaths.length) {
+    return []
+  }
+
+  const configUri = await findNearestMixinConfigUri(mixinFilePath)
+  if (!configUri) {
+    return []
+  }
+
+  const configFilePath = configUri.fsPath
+  let fileState
+  let astRoot
+
+  try {
+    fileState = await getFileStateAndContent(configFilePath)
+    astRoot = parseModule(fileState.content, { loc: true })
+  } catch (_error) {
+    return []
+  }
+
+  return findRequireJsMixinMappings(astRoot)
+    .filter(mapping => mapping.enabled && modulePaths.includes(mapping.mixinModulePath))
+    .map(mapping => {
+      return {
+        ...mapping,
+        configFilePath,
+        targetFilePath: moduleResolver.resolveModulePath(mapping.targetModulePath, configFilePath)
+      }
+    })
+    .sort((left, right) => {
+      return left.targetModulePath.localeCompare(right.targetModulePath)
+    })
+}
+
 module.exports = {
   convertLocToRange,
   findAppliedMixins,
+  findMixinsTargets,
   getPreferredMixinLocation
 }

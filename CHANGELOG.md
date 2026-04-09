@@ -2,6 +2,14 @@
 
 All notable changes to this fork are documented in this file.
 
+## [1.0.3] - 2026-04-09
+
+### Added
+
+- Mixin navigation support: Go to Definition now works within mixin files for `this.*` members and `target.extend` calls.
+- Automatic reverse lookup from mixin file to its mapped target component via local `requirejs-config.js`.
+- Member resolution fallback: mixin locals → target → parent chain (same as core component).
+
 ## [1.0.2] - 2026-04-08
 
 ### Added

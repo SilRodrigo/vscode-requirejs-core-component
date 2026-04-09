@@ -220,6 +220,7 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
   let isMember = false
   let imported, modulePath
   let lookupThisMemberInHierarchy = false
+  let lookupSuperMemberInHierarchy = false
 
   // Walks parent links to the closest ancestor satisfying the predicate.
   function findParentNode (node, predicate) {
@@ -414,6 +415,7 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
 
     selected = methodName
     isMember = true
+    lookupSuperMemberInHierarchy = true
   }
 
   // Detects `this.member` inside methods passed to `*.extend({...})`
@@ -528,7 +530,8 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
     imported: imported,
     selected: selected,
     isMember: isMember,
-    lookupThisMemberInHierarchy
+    lookupThisMemberInHierarchy,
+    lookupSuperMemberInHierarchy
   }
 }
 

@@ -287,6 +287,38 @@ function findExtendMethodDefinitions (astRoot) {
   return methods
 }
 
+/**
+ * Finds method call occurrences by method name.
+ * It includes calls like `method()` and `object.method()`.
+ * @param {Object} astRoot Parsed document.
+ * @param {string} methodName Method to look for.
+ * @returns {Array} Ranges where the method is called.
+ * @memberof codeParser
+ */
+function findMethodCalls (astRoot, methodName) {
+  const locations = []
+
+  walk(astRoot, {
+    CallExpression(node) {
+      const { callee } = node
+      let loc
+
+      if (callee && callee.type === 'Identifier' && callee.name === methodName) {
+        loc = callee.loc
+      } else if (callee && callee.type === 'MemberExpression' && callee.computed === false &&
+        callee.property && callee.property.type === 'Identifier' && callee.property.name === methodName) {
+        loc = callee.property.loc
+      }
+
+      if (loc) {
+        locations.push(loc)
+      }
+    }
+  })
+
+  return locations
+}
+
 function findObservableAssignmentInFunction (functionNode, memberName) {
   let loc
 
@@ -476,6 +508,7 @@ module.exports = {
   findAllIdentifiers,
   findExtendMemberDefinition,
   findExtendMethodDefinitions,
+  findMethodCalls,
   findIdentifier,
   findFirstExtendCall,
   findFirstExtendBaseIdentifier,

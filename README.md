@@ -31,6 +31,8 @@ This fork is maintained by Rodrigo Silva and is focused on Magento 2 Core Compon
   - CodeLens indicators showing count of mixins per method (`Mixins: N`).
   - Automatic detection of methods overridden by applied mixins.
   - `Show Applied Mixins` command to list all mixins affecting current module.
+  - **Mixin navigation**: Go to Definition for `this.*` members and `target.extend` calls within mixin files with automatic reverse lookup to mapped target component.
+  - **Method usages in mixins**: Ctrl+Click on method name in mixin's `.extend()` shows all call sites in the mixin + parent method in target component for quick navigation.
 
 ## Magento 2 Core Component Focus
 
@@ -45,7 +47,7 @@ The extension is optimized for patterns commonly used in Magento 2 frontend modu
 Install from a local VSIX package:
 
 ```bash
-code --install-extension ./vscode-requirejs-core-component-1.0.2.vsix --force
+code --install-extension ./vscode-requirejs-core-component-1.0.3.vsix --force
 ```
 
 If your VSIX file has a different name, replace it in the command above.
