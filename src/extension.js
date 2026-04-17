@@ -3,7 +3,8 @@
  * @namespace extension
  */
 
-const { commands, languages, workspace } = require('vscode')
+const { commands, languages, workspace, window } = require('vscode')
+const { parseModule, findFirstExtendCall } = require('./codeParser')
 const StatusNotifier = require('./statusNotifier')
 const ModuleResolver = require('./moduleResolver')
 const ModuleAnalyser = require('./moduleAnalyser')
@@ -13,8 +14,11 @@ const ReferenceProvider = require('./referenceProvider')
 const CompletionItemProvider = require('./completionItemProvider')
 const HoverProvider = require('./hoverProvider')
 const RenameProvider = require('./renameProvider')
+const MixinCodeLensProvider = require('./mixinCodeLensProvider')
+const MixinDecorations = require('./mixinDecorations')
 const goToDefinitionModule = require('./goToDefinitionModule')
 const renameExportedSymbol = require('./renameExportedSymbol')
+const showAppliedMixins = require('./showAppliedMixins')
 
 /**
  * Sets a context flag, which can be used to enable or disable menu items.
@@ -102,7 +106,8 @@ function configureExtension (context) {
     referenceProvider,
     completionItemProvider,
     hoverProvider,
-    renameProvider
+    renameProvider,
+    mixinCodeLensProvider
   } = context.providers
   const language = [
     { scheme: 'file', language: 'javascript' },
@@ -124,6 +129,9 @@ function configureExtension (context) {
   configureProvider(context, 'RenameProvider', () =>
     languages.registerRenameProvider(
       language, renameProvider))
+  configureProvider(context, 'MixinCodeLensProvider', () =>
+    languages.registerCodeLensProvider(
+      language, mixinCodeLensProvider))
 
   // Allow enabling or disabling or menu items or keyboard bindings.
   configureContextFlag('showGoToDefinitionModuleCommand')
@@ -137,6 +145,43 @@ function configureExtension (context) {
       .get('moduleCacheSize') || 10000
     moduleAnalyser.adaptCacheSizes(moduleCacheSize)
   }
+}
+
+/**
+ * Checks whether the current document looks like a Core Component module.
+ * @param {TextDocument} document The current document.
+ * @returns {boolean} True if the document contains an `.extend(...)` call.
+ * @inner
+ */
+function isCoreComponentDocument (document) {
+  if (!document) {
+    return false
+  }
+
+  const { languageId } = document
+  if (languageId !== 'javascript' && languageId !== 'javascriptreact') {
+    return false
+  }
+
+  try {
+    const astRoot = parseModule(document.getText(), { loc: true, jsx: languageId === 'javascriptreact' })
+
+    return !!findFirstExtendCall(astRoot)
+  } catch (_error) {
+    return false
+  }
+}
+
+/**
+ * Sets context flag for enabling Core Component-only UI commands.
+ * @param {TextEditor} editor The active editor.
+ * @returns {Promise} Resolves when the context flag is set.
+ * @inner
+ */
+function updateCoreComponentContext (editor) {
+  const isCoreComponentFile = !!(editor && isCoreComponentDocument(editor.document))
+
+  return setContextFlag('isCoreComponentFile', isCoreComponentFile)
 }
 
 module.exports = {
@@ -158,6 +203,8 @@ module.exports = {
     const completionItemProvider = new CompletionItemProvider(moduleResolver, folderCrawler)
     const hoverProvider = new HoverProvider(moduleResolver)
     const renameProvider = new RenameProvider(referenceProvider)
+    const mixinCodeLensProvider = new MixinCodeLensProvider(moduleResolver)
+    const mixinDecorations = new MixinDecorations(moduleResolver)
     const configurationContext = { subscriptions: subscriptions }
 
     configurationContext.providers = {
@@ -165,18 +212,30 @@ module.exports = {
       referenceProvider: referenceProvider,
       completionItemProvider: completionItemProvider,
       hoverProvider: hoverProvider,
-      renameProvider: renameProvider
+      renameProvider: renameProvider,
+      mixinCodeLensProvider: mixinCodeLensProvider
     }
 
     const configurationChange = workspace.onDidChangeConfiguration(() =>
       configureExtension(configurationContext))
+    const activeEditorChange = window.onDidChangeActiveTextEditor(editor =>
+      updateCoreComponentContext(editor))
+    const activeDocumentChange = workspace.onDidChangeTextDocument(event => {
+      const editor = window.activeTextEditor
+
+      if (editor && event.document === editor.document) {
+        return updateCoreComponentContext(editor)
+      }
+    })
 
     configurationContext.registrations = { configurationChange: configurationChange }
 
     subscriptions.push(
       statusNotifier, moduleResolver, moduleAnalyser, folderCrawler,
       definitionProvider, referenceProvider, completionItemProvider,
-      hoverProvider, renameProvider, configurationChange,
+      hoverProvider, renameProvider, mixinCodeLensProvider, mixinDecorations,
+      configurationChange,
+      activeEditorChange, activeDocumentChange,
       // Registering commands does not show them in UI immediately
       // and they do not disturb, when registered all the time.
       commands.registerTextEditorCommand(
@@ -184,8 +243,12 @@ module.exports = {
         goToDefinitionModule.bind(null, definitionProvider)),
       commands.registerTextEditorCommand(
         'requireModuleSupport.renameExportedSymbol',
-        renameExportedSymbol.bind(null, renameProvider)))
+        renameExportedSymbol.bind(null, renameProvider)),
+      commands.registerCommand(
+        'requireModuleSupport.showAppliedMixins',
+        showAppliedMixins.bind(null, moduleResolver)))
 
     configureExtension(configurationContext)
+    updateCoreComponentContext(window.activeTextEditor)
   }
 }

@@ -8,6 +8,7 @@ const { parseModule, findIdentifierOrLiteralWithinRange }
   = require('./codeParser')
 const { findModuleExport, findBodyReturn, findOriginatingModuleDependency }
   = require('./codeAnalyser')
+const { findMixinsTargets } = require('./appliedMixins')
 const ModuleResolver = require('./moduleResolver')
 const CacheByDocumentOrFile = require('./cacheByDocumentOrFile')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
@@ -286,7 +287,7 @@ class ModuleAnalyser {
    * either exported or imported, neither `modulePath` nor
    * `referencePaths` will be set.
    */
-  getOriginatingModuleDependency (document, position) {
+  async getOriginatingModuleDependency (document, position) {
     const range = document.getWordRangeAtPosition(position)
     let moduleDependency
 
@@ -304,13 +305,14 @@ class ModuleAnalyser {
 
           if (modulePath && typeof modulePath === 'string') {
             const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath)
-            return workspace.fs
-              .stat(Uri.file(filePath))
-              .then(() => ({ filePath }))
-              .catch(() => {
-                window.showWarningMessage(localize('fileDoesNotExist',
-                  '"{0}" does not exist.', workspace.asRelativePath(filePath, false)))
-              })
+            try {
+              await workspace.fs.stat(Uri.file(filePath))
+              return { filePath }
+            } catch (_error) {
+              window.showWarningMessage(localize('fileDoesNotExist',
+                '"{0}" does not exist.', workspace.asRelativePath(filePath, false)))
+              return
+            }
           }
 
           window.showErrorMessage(localize('noStringWithModulePath',
@@ -319,6 +321,21 @@ class ModuleAnalyser {
         }
 
         moduleDependency = findOriginatingModuleDependency(astRoot, identifier, dependencies)
+
+        const canUseMixinTargetFallback =
+          moduleDependency.lookupThisMemberInHierarchy ||
+          moduleDependency.lookupSuperMemberInHierarchy ||
+          moduleDependency.selected === 'extend'
+
+        if (!moduleDependency.modulePath && moduleDependency.imported && canUseMixinTargetFallback) {
+          const mixinTargets = await findMixinsTargets(this.moduleResolver, currentFilePath)
+          const mixinTarget = mixinTargets[0]
+
+          if (mixinTarget) {
+            moduleDependency.modulePath = mixinTarget.targetModulePath
+            moduleDependency.mixinTargetFilePath = mixinTarget.targetFilePath
+          }
+        }
 
         if (moduleDependency.lookupThisMemberInHierarchy) {
           moduleDependency.filePath = currentFilePath

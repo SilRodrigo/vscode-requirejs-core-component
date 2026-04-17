@@ -1,8 +1,8 @@
 {
-  "name": "vscode-requirejs",
+  "name": "vscode-requirejs-core-component",
   "displayName": "Core Component Pattern Support",
   "description": "Navigation and symbol support for Magento 2 Core Component modules built with RequireJS/AMD.",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "homepage": "https://github.com/SilRodrigo/vscode-requirejs-core-component#readme",
   "author": {
     "name": "Rodrigo Silva",
@@ -94,7 +94,8 @@
     "onLanguage:javascript",
     "onLanguage:javascriptreact",
     "onCommand:requireModuleSupport.goToDefinitionModule",
-    "onCommand:requireModuleSupport.renameExportedSymbol"
+    "onCommand:requireModuleSupport.renameExportedSymbol",
+    "onCommand:requireModuleSupport.showAppliedMixins"
   ],
   "contributes": {
     "configuration": {
@@ -125,6 +126,16 @@
           "type": "boolean",
           "default": true,
           "description": "%requirejs.config.enableRenameProvider%"
+        },
+        "requireModuleSupport.enableMixinCodeLensProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableMixinCodeLensProvider%"
+        },
+        "requireModuleSupport.enableMixinDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableMixinDecorations%"
         },
         "requireModuleSupport.showGoToDefinitionModuleCommand": {
           "type": "boolean",
@@ -227,6 +238,13 @@
           ],
           "description": "%requirejs.config.observableDeclarationMethodNames%"
         },
+        "requireModuleSupport.mixinConfigSearchPatterns": {
+          "type": "array",
+          "default": [
+            "app/design/frontend/**/requirejs-config.js"
+          ],
+          "description": "%requirejs.config.mixinConfigSearchPatterns%"
+        },
         "requireModuleSupport.pluginExtensions": {
           "type": "object",
           "default": {},
@@ -247,6 +265,10 @@
       {
         "command": "requireModuleSupport.renameExportedSymbol",
         "title": "%requirejs.command.renameExportedSymbol.title%"
+      },
+      {
+        "command": "requireModuleSupport.showAppliedMixins",
+        "title": "%requirejs.command.showAppliedMixins.title%"
       }
     ],
     "keybindings": [
@@ -273,6 +295,11 @@
           "command": "requireModuleSupport.renameExportedSymbol",
           "when": "editorLangId == javascript && requireModuleSupport:showRenameExportedSymbolCommand",
           "group": "1_modification"
+        },
+        {
+          "command": "requireModuleSupport.showAppliedMixins",
+          "when": "(editorLangId == javascript || editorLangId == javascriptreact) && requireModuleSupport:isCoreComponentFile",
+          "group": "navigation@10"
         }
       ],
       "commandPalette": [
@@ -283,6 +310,10 @@
         {
           "command": "requireModuleSupport.renameExportedSymbol",
           "when": "editorLangId == javascript"
+        },
+        {
+          "command": "requireModuleSupport.showAppliedMixins",
+          "when": "(editorLangId == javascript || editorLangId == javascriptreact) && requireModuleSupport:isCoreComponentFile"
         }
       ]
     }

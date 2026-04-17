@@ -159,6 +159,64 @@ function findFirstExtendBaseIdentifier (astRoot) {
   return name
 }
 
+/**
+ * Finds RequireJS mixin mappings in a Magento-style `requirejs-config.js`.
+ * @param {Object} astRoot Parsed document.
+ * @returns {Array} Mixin mappings as objects containing targetModulePath,
+ * mixinModulePath, enabled and loc.
+ * @memberof codeParser
+ */
+function findRequireJsMixinMappings (astRoot) {
+  const mappings = []
+
+  walk(astRoot, {
+    Property(node) {
+      if (getPropertyName(node) !== 'mixins' ||
+        !(node.value && node.value.type === 'ObjectExpression')) {
+        return
+      }
+
+      (node.value.properties || []).forEach(targetProperty => {
+        if (!(targetProperty && targetProperty.type === 'Property')) {
+          return
+        }
+
+        const targetModulePath = getPropertyName(targetProperty)
+        const mixinContainer = targetProperty.value
+
+        if (!targetModulePath || !(mixinContainer && mixinContainer.type === 'ObjectExpression')) {
+          return
+        }
+
+        (mixinContainer.properties || []).forEach(mixinProperty => {
+          if (!(mixinProperty && mixinProperty.type === 'Property')) {
+            return
+          }
+
+          const mixinModulePath = getPropertyName(mixinProperty)
+          const { value } = mixinProperty
+          let enabled = true
+
+          if (value && value.type === 'Literal' && typeof value.value === 'boolean') {
+            enabled = value.value
+          }
+
+          if (mixinModulePath) {
+            mappings.push({
+              targetModulePath,
+              mixinModulePath,
+              enabled,
+              loc: mixinProperty.key && mixinProperty.key.loc
+            })
+          }
+        })
+      })
+    }
+  })
+
+  return mappings
+}
+
 function getPropertyName (property) {
   const { key, computed } = property
   if (!key || computed) return undefined
@@ -178,6 +236,87 @@ function findExtendObject (callExpression) {
   const { arguments: args = [] } = callExpression || {}
 
   return args.find(argument => argument && argument.type === 'ObjectExpression')
+}
+
+/**
+ * Finds method definitions in objects passed to `*.extend({...})`.
+ * @param {Object} astRoot Parsed document.
+ * @returns {Array} Method definitions as objects with `name` and `loc`.
+ * @memberof codeParser
+ */
+function findExtendMethodDefinitions (astRoot) {
+  const methods = []
+
+  walk(astRoot, {
+    CallExpression(node) {
+      if (!isExtendCall(node)) {
+        return
+      }
+
+      const extendObject = findExtendObject(node)
+      if (!extendObject) {
+        return
+      }
+
+      const properties = extendObject.properties || []
+
+      properties.forEach(property => {
+        if (!(property && property.type === 'Property')) {
+          return
+        }
+
+        const name = getPropertyName(property)
+        if (!name) {
+          return
+        }
+
+        const isMethod = property.method ||
+          property.value && (property.value.type === 'FunctionExpression' ||
+            property.value.type === 'ArrowFunctionExpression')
+
+        if (isMethod && property.key && property.key.loc) {
+          methods.push({
+            name,
+            loc: property.key.loc
+          })
+        }
+      })
+    }
+  })
+
+  return methods
+}
+
+/**
+ * Finds method call occurrences by method name.
+ * It includes calls like `method()` and `object.method()`.
+ * @param {Object} astRoot Parsed document.
+ * @param {string} methodName Method to look for.
+ * @returns {Array} Ranges where the method is called.
+ * @memberof codeParser
+ */
+function findMethodCalls (astRoot, methodName) {
+  const locations = []
+
+  walk(astRoot, {
+    CallExpression(node) {
+      const { callee } = node
+      let loc
+
+      if (callee && callee.type === 'Identifier' && callee.name === methodName) {
+        loc = callee.loc
+      } else if (callee && callee.type === 'MemberExpression' && callee.computed === false &&
+        callee.property && callee.property.type === 'Identifier' && callee.property.name === methodName) {
+        loc = callee.property.loc
+      }
+
+      if (loc) {
+        locations.push(loc)
+      }
+    }
+  })
+
+  return locations
 }
 
 function findObservableAssignmentInFunction (functionNode, memberName) {
@@ -368,9 +507,12 @@ function findIdentifierOrLiteralWithinRange (astRoot, range) {
 module.exports = {
   findAllIdentifiers,
   findExtendMemberDefinition,
+  findExtendMethodDefinitions,
+  findMethodCalls,
   findIdentifier,
   findFirstExtendCall,
   findFirstExtendBaseIdentifier,
+  findRequireJsMixinMappings,
   findIdentifierOrLiteralWithinRange,
   parseModule
 }

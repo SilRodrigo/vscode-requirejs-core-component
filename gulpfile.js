@@ -5,15 +5,15 @@ const { ensureMappings } = require('gulp-sourcemaps-identity')
 const nls = require('@prantlf/vscode-nls-dev')
 
 const languages = [
-	{ id: 'cs', folderName: 'csy' }
+	{ id: 'pt-br', folderName: 'ptb' }
 ]
 
 const transifexApiHostname = 'www.transifex.com'
 const transifexApiName = 'api'
 const transifexApiToken = process.env.TRANSIFEX_API_TOKEN
-const transifexProjectName = 'vscode-requirejs'
-const transifexExtensionName = 'vscode-requirejs'
-const vscodeExtensionId = 'prantlf.vscode-requirejs'
+const transifexProjectName = 'vscode-requirejs-core-component'
+const transifexExtensionName = 'vscode-requirejs-core-component'
+const vscodeExtensionId = 'silRodrigo.vscode-requirejs-core-component'
 
 const cleanTask = () => del(['out/**', 'package.nls.*.json'])
 

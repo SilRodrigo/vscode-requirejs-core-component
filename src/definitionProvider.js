@@ -1,10 +1,13 @@
 const { workspace, Uri, Location, Range, Position } = require('vscode')
 const {
   findExtendMemberDefinition,
+  findExtendMethodDefinitions,
   findIdentifier,
   findFirstExtendCall,
-  findFirstExtendBaseIdentifier
+  findFirstExtendBaseIdentifier,
+  findMethodCalls
 } = require('./codeParser')
+const { findMixinsTargets } = require('./appliedMixins')
 const ModuleAnalyser = require('./moduleAnalyser')
 const { hostOrCreateDisposable, disposeAll } = require('./disposableHost')
 
@@ -55,6 +58,98 @@ class DefinitionProvider {
     return {
       observableDeclarationMethodNames: settings.get('observableDeclarationMethodNames') || ['declareObservables']
     }
+  }
+
+  /**
+   * Checks if a VS Code Position is within an AST node's location range.
+   * Handles coordinate system conversion: VS Code uses 0-indexed lines, AST uses 1-indexed.
+   * 
+   * @param {Position} position The VS Code cursor position (0-indexed lines)
+   * @param {Object} loc The AST node's location with {start, end} properties (1-indexed lines)
+   * @returns {boolean} True if the position is within the AST location's bounds
+   */
+  isPositionWithinLoc (position, loc) {
+    if (!(position && loc && loc.start && loc.end)) {
+      return false
+    }
+
+    const line = position.line + 1
+    const column = position.character
+
+    if (line < loc.start.line || line > loc.end.line) {
+      return false
+    }
+
+    if (line === loc.start.line && column < loc.start.column) {
+      return false
+    }
+
+    if (line === loc.end.line && column > loc.end.column) {
+      return false
+    }
+
+    return true
+  }
+
+  /**
+   * Converts an AST node location to a VS Code Location object.
+   * Handles coordinate system conversion: converts 1-indexed AST lines to 0-indexed VS Code positions.
+   * 
+   * @param {Uri} documentUri The URI of the document containing the location
+   * @param {Object} loc The AST node's location with {start, end} properties (1-indexed lines)
+   * @returns {Location} A VS Code Location object with proper 0-indexed coordinates
+   */
+  convertLocToLocation (documentUri, loc) {
+    return new Location(documentUri, new Range(
+      new Position(loc.start.line - 1, loc.start.column),
+      new Position(loc.end.line - 1, loc.end.column)
+    ))
+  }
+
+  /**
+   * Provides method usage locations when hovering over a method name in `.extend({...})`.
+   * 
+   * Behavior:
+   * - In core components: returns all call sites of the method within the file.
+   * - In mixin files: returns all call sites in the mixin + the parent method in target component.
+   * 
+   * This enables quick navigation to parent method overrides for mixins specifically.
+   * 
+   * @param {TextDocument} document The current document
+   * @param {Position} position The cursor position over the method name
+   * @returns {Promise<Array|undefined>} Array of Locations with usages, or undefined if not in a method
+   */
+  async provideMethodUsageLocations (document, position) {
+    const astRoot = this.moduleAnalyser.getParsedModule(document)
+    const methodDefinition = findExtendMethodDefinitions(astRoot).find(method => {
+      return this.isPositionWithinLoc(position, method.loc)
+    })
+
+    if (!methodDefinition) {
+      return
+    }
+
+    const methodCalls = findMethodCalls(astRoot, methodDefinition.name)
+    const localLocations = methodCalls.map(loc => this.convertLocToLocation(document.uri, loc))
+
+    const mixinTargets = await findMixinsTargets(this.moduleAnalyser.moduleResolver, document.fileName)
+    const targetFilePath = mixinTargets[0] && mixinTargets[0].targetFilePath
+    if (!targetFilePath) {
+      return localLocations.length ? localLocations : undefined
+    }
+
+    const parentLocation = await this.searchExtendMemberInHierarchy(targetFilePath, methodDefinition.name, {
+      depth: 0,
+      visited: new Set(),
+      maxDepth: this.getLookupMaxLevels(),
+      resolutionOptions: this.getExtendMemberResolutionOptions()
+    })
+
+    if (parentLocation) {
+      localLocations.push(parentLocation)
+    }
+
+    return localLocations.length ? localLocations : undefined
   }
 
   /**
@@ -149,9 +244,10 @@ class DefinitionProvider {
       depth: 0,
       visited: new Set(),
       maxDepth: this.getLookupMaxLevels(),
-      resolutionOptions: this.getExtendMemberResolutionOptions()
+      resolutionOptions: this.getExtendMemberResolutionOptions(),
+      fallbackFilePaths: []
     }
-    const { depth, visited, maxDepth, resolutionOptions } = state
+    const { depth, visited, maxDepth, resolutionOptions, fallbackFilePaths = [] } = state
 
     if (depth > maxDepth || visited.has(filePath)) {
       return Promise.resolve()
@@ -183,14 +279,27 @@ class DefinitionProvider {
               .resolveModulePath(dependency.source, document.fileName)
 
             if (parentFilePath) {
-              return this.searchExtendMemberInHierarchy(parentFilePath, memberName, {
+              return await this.searchExtendMemberInHierarchy(parentFilePath, memberName, {
                 depth: depth + 1,
                 visited,
                 maxDepth,
-                resolutionOptions
+                resolutionOptions,
+                fallbackFilePaths
               })
             }
           }
+        }
+
+        if (fallbackFilePaths.length) {
+          const [nextFallbackFilePath, ...remainingFallbackFilePaths] = fallbackFilePaths
+
+          return await this.searchExtendMemberInHierarchy(nextFallbackFilePath, memberName, {
+            depth: depth + 1,
+            visited,
+            maxDepth,
+            resolutionOptions,
+            fallbackFilePaths: remainingFallbackFilePaths
+          })
         }
       }
     })
@@ -226,7 +335,7 @@ class DefinitionProvider {
       return
     }
 
-    return this.searchModule(parentFilePath, searchFor, state)
+    return await this.searchModule(parentFilePath, searchFor, state)
   }
 
   /**
@@ -239,6 +348,11 @@ class DefinitionProvider {
     this.moduleAnalyser.startCollectingErrors()
 
     try {
+      const methodUsageLocations = await this.provideMethodUsageLocations(document, position)
+      if (methodUsageLocations) {
+        return methodUsageLocations
+      }
+
       const moduleDependency = await this.moduleAnalyser.getOriginatingModuleDependency(document, position)
 
       // If the selected identifier cannot be tracked to other module,
@@ -248,8 +362,18 @@ class DefinitionProvider {
         const filePath = moduleDependency.filePath
 
         if (filePath) {
-          if (moduleDependency.lookupThisMemberInHierarchy) {
-            return await this.searchExtendMemberInHierarchy(filePath, moduleDependency.selected)
+          if (moduleDependency.lookupThisMemberInHierarchy || moduleDependency.lookupSuperMemberInHierarchy) {
+            const fallbackFilePaths = moduleDependency.mixinTargetFilePath
+              ? [moduleDependency.mixinTargetFilePath]
+              : []
+
+            return await this.searchExtendMemberInHierarchy(filePath, moduleDependency.selected, {
+              depth: 0,
+              visited: new Set(),
+              maxDepth: this.getLookupMaxLevels(),
+              resolutionOptions: this.getExtendMemberResolutionOptions(),
+              fallbackFilePaths
+            })
           }
 
           return await this.searchModule(filePath, moduleDependency.selected)

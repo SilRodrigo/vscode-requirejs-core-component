@@ -1,5 +1,0 @@
-{
-  "fileDoesNotExist": "\"{0}\" nexistuje.",
-  "noStringWithModulePath": "Nebyl vybrán žádný řetězec připomínající cestu k modulu.",
-  "analysingFailed": "Analýza {0} souboru selhala.|||Analýza {0} souborů selhala.|||Analýza {0} souborů selhala."
-}
