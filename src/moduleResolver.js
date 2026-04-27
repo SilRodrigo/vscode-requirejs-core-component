@@ -1,7 +1,7 @@
 const { workspace } = require('vscode')
 const nls = require('vscode-nls')
 const amodroConfig = require('@prantlf/amodro-trace/config')
-const { readFileSync } = require('fs')
+const { readFileSync, existsSync } = require('fs')
 const { normalize, join, dirname, extname } = require('path')
 const requirejs = require('@prantlf/requirejs')
 const { addDisposable, disposeAll } = require('./disposableHost')
@@ -103,6 +103,28 @@ class ModuleResolver {
    * @returns {string} the file location
    */
   resolveModulePath (modulePath, currentFilePath) {
+    const candidates = this.resolveModulePathCandidates(modulePath, currentFilePath)
+
+    if (!candidates.length) {
+      return undefined
+    }
+
+    const existingCandidate = candidates.find(candidate => existsSync(candidate))
+
+    return existingCandidate || candidates[0]
+  }
+
+  /**
+   * Computes all absolute file-path candidates for a RequireJS module path.
+   * Candidates are returned in priority order according to path alias declarations.
+   * @param {string} modulePath Require path of the target module.
+   * @param {string} currentFilePath Current file path to start search from.
+   * @param {Object} options Candidate resolution options.
+   * @returns {Array<string>} Ordered list of candidate file paths.
+   */
+  resolveModulePathCandidates (modulePath, currentFilePath, options) {
+    const { appendJsExtension = true } = options || {}
+
     // Plugins, which load other files follow the syntax "plugin!parameter",
     // where "parameter" is usually another module path to be resolved.
     const pluginSeparator = modulePath.indexOf('!')
@@ -121,17 +143,75 @@ class ModuleResolver {
           filePath += pluginExtension
         }
       }
-    } else {
-      // The requirejs.toUrl method does not append '.js' to the resolved path.
-      filePath = modulePath + '.js'
+
+      // The global requirejs.toUrl does not resolve relative module paths.
+      if (filePath.startsWith('./')) {
+        filePath = join(dirname(currentFilePath), filePath)
+      }
+
+      return [normalize(requirejs.toUrl(filePath))]
     }
 
-    // The global requirejs.toUrl does not resolve relative module paths.
-    if (filePath.startsWith('./')) {
-      filePath = join(dirname(currentFilePath), filePath)
+    const pathSuffix = appendJsExtension ? '.js' : ''
+    const aliasedModulePaths = this.getAliasedModulePathCandidates(modulePath)
+    const modulePathCandidates = aliasedModulePaths.length ? aliasedModulePaths : [modulePath]
+    const filePathCandidates = modulePathCandidates.map(candidatePath => {
+      let candidateFilePath = candidatePath + pathSuffix
+
+      // The global requirejs.toUrl does not resolve relative module paths.
+      if (candidateFilePath.startsWith('./')) {
+        candidateFilePath = join(dirname(currentFilePath), candidateFilePath)
+      }
+
+      return normalize(requirejs.toUrl(candidateFilePath))
+    })
+
+    return Array.from(new Set(filePathCandidates))
+  }
+
+  /**
+   * Resolves only existing file candidates for a RequireJS module path.
+   * @param {string} modulePath Require path of the target module.
+   * @param {string} currentFilePath Current file path to start search from.
+   * @param {Object} options Candidate resolution options.
+   * @returns {Array<string>} Ordered list of existing file paths.
+   */
+  resolveExistingModulePaths (modulePath, currentFilePath, options) {
+    return this.resolveModulePathCandidates(modulePath, currentFilePath, options)
+      .filter(filePath => existsSync(filePath))
+  }
+
+  /**
+   * Builds candidate module paths for an alias configuration.
+   * Returns candidates in declared order to preserve fallback semantics.
+   * @param {string} modulePath Require path of the target module.
+   * @returns {Array<string>} Candidate module paths with alias expanded.
+   */
+  getAliasedModulePathCandidates (modulePath) {
+    if (modulePath.startsWith('./') || modulePath.startsWith('../')) {
+      return []
     }
 
-    return normalize(requirejs.toUrl(filePath))
+    const { paths } = this.configuration
+    const aliases = Object.keys(paths).sort((a, b) => b.length - a.length)
+
+    const alias = aliases.find(pathPrefix => {
+      return modulePath === pathPrefix || modulePath.startsWith(pathPrefix + '/')
+    })
+
+    if (!alias) {
+      return []
+    }
+
+    const aliasPaths = Array.isArray(paths[alias])
+      ? paths[alias]
+      : [paths[alias]]
+
+    const suffix = modulePath.substr(alias.length)
+
+    return aliasPaths
+      .filter(path => typeof path === 'string' && path)
+      .map(path => path + suffix)
   }
 
   /**
@@ -168,17 +248,25 @@ class ModuleResolver {
     // Try to find path aliases at the beginning of the file path, which
     // are specified by the `paths` configuration property.
     Object.keys(paths).forEach(pathPrefix => {
-      let basePath = normalize(join(baseUrl, paths[pathPrefix]))
+      const pathEntries = Array.isArray(paths[pathPrefix])
+        ? paths[pathPrefix]
+        : [paths[pathPrefix]]
 
-      if (!basePath.endsWith('/')) {
-        basePath += '/'
-      }
-      // Suggest the path starting with the alias (prefix) instead of
-      // the actual absolute path.
-      if (filePath.startsWith(basePath)) {
-        modulePaths.push(dealWithExtension(
-          join(pathPrefix, filePath.substr(basePath.length))))
-      }
+      pathEntries
+        .filter(pathEntry => typeof pathEntry === 'string' && pathEntry)
+        .forEach(pathEntry => {
+          let basePath = normalize(join(baseUrl, pathEntry))
+
+          if (!basePath.endsWith('/')) {
+            basePath += '/'
+          }
+          // Suggest the path starting with the alias (prefix) instead of
+          // the actual absolute path.
+          if (filePath.startsWith(basePath)) {
+            modulePaths.push(dealWithExtension(
+              join(pathPrefix, filePath.substr(basePath.length))))
+          }
+        })
     })
 
     return modulePaths

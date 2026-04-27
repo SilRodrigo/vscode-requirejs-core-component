@@ -51,6 +51,10 @@ test('activate should register expected objects', () => {
     { scheme: 'file', language: 'javascript' },
     { scheme: 'file', language: 'javascriptreact' }
   ]
+  const definitionLanguage = [
+    ...language,
+    { scheme: 'file', language: 'xml' }
+  ]
 
   extension.activate(context)
 
@@ -84,7 +88,7 @@ test('activate should register expected objects', () => {
 
   assert.ok(Array.isArray(definitionProviderArgs))
   assert.equal(definitionProviderArgs.length, 2)
-  assert.deepEqual(definitionProviderArgs[0], language)
+  assert.deepEqual(definitionProviderArgs[0], definitionLanguage)
   assert.ok(definitionProviderArgs[1] instanceof DefinitionProvider)
 
   const referenceProviderArgs = registerReferenceProviderStub.getCall(0).args

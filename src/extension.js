@@ -113,10 +113,14 @@ function configureExtension (context) {
     { scheme: 'file', language: 'javascript' },
     { scheme: 'file', language: 'javascriptreact' }
   ]
+  const definitionLanguage = [
+    ...language,
+    { scheme: 'file', language: 'xml' }
+  ]
 
   configureProvider(context, 'DefinitionProvider', () =>
     languages.registerDefinitionProvider(
-      language, definitionProvider))
+      definitionLanguage, definitionProvider))
   configureProvider(context, 'ReferenceProvider', () =>
     languages.registerReferenceProvider(
       language, referenceProvider))

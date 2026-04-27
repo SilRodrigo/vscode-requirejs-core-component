@@ -56,6 +56,24 @@ function createCompletionItems (items) {
   return Promise.resolve(result)
 }
 
+function mergeFileItems (groups) {
+  const merged = []
+  const seen = new Set()
+
+  groups.forEach(group => {
+    group.forEach(item => {
+      const key = `${item.directory ? 'd' : 'f'}:${item.name}`
+
+      if (!seen.has(key)) {
+        seen.add(key)
+        merged.push(item)
+      }
+    })
+  })
+
+  return merged
+}
+
 /**
  * Provides autocompletion of RequireJS module paths in module dependencies.
  * When typing "/" after a directory name, the child modules will be offered
@@ -91,21 +109,25 @@ class CompletionItemProvider {
 
     // Extract the absolute file paths path from the string on the current
     // position, which appears to contain a module path.
-    const folderPath = this.getFocusedFolderPath(document.fileName,
+    const folderPaths = this.getFocusedFolderPaths(document.fileName,
       currentLine, currentCharacter)
 
-    if (!folderPath) {
+    if (!folderPaths.length) {
       return Promise.resolve([])
     }
     statusNotifier.show()
 
-    // Offer the child modules for directories only.
-    return this.folderCrawler.checkDirectory(folderPath)
-      .then(() => {
-        return this.folderCrawler.listFolderChildren(folderPath, cancellationToken)
-          .then(items => this.folderCrawler.inspectFileItems(items, cancellationToken))
-          .then(items => createCompletionItems(items))
-      }, () => [])
+    const crawlers = folderPaths.map(folderPath => {
+      return this.folderCrawler.checkDirectory(folderPath)
+        .then(() => this.folderCrawler.listFolderChildren(folderPath, cancellationToken))
+        .then(items => this.folderCrawler.inspectFileItems(items, cancellationToken))
+        .catch(() => [])
+    })
+
+    // Offer child modules from all configured candidate folders.
+    return Promise.all(crawlers)
+      .then(groups => mergeFileItems(groups))
+      .then(items => createCompletionItems(items))
       .then(items => {
         statusNotifier.notify('check',
           choosePlural(items.length, localize('crawlSucceeded.title',
@@ -129,9 +151,9 @@ class CompletionItemProvider {
    * @param {string} currentFilePath The file-system path to the currently opened file.
    * @param {number} currentLine The current line of the cursor.
    * @param {number} currentPosition The current position of the cursor.
-   * @returns {string} The file-system path or `undefined`, if the string cannot be interpreted as a module path.
+   * @returns {Array<string>} Candidate file-system paths for module lookup.
    */
-  getFocusedFolderPath (currentFilePath, currentLine, currentPosition) {
+  getFocusedFolderPaths (currentFilePath, currentLine, currentPosition) {
     let userPath = getModulePathUpToPosition(currentLine, currentPosition)
     const pluginSeparator = userPath.indexOf('!')
 
@@ -140,14 +162,12 @@ class CompletionItemProvider {
       userPath = userPath.substr(pluginSeparator + 1)
     }
     if (!startsLikeModulePath(userPath)) {
-      return undefined
+      return []
     }
 
-    const filePath = this.moduleResolver.resolveModulePath(userPath, currentFilePath)
-
-    // Without a plugin, every resolved path is handled as a JavaScript
-    // module and gets the extension ".js" appended.
-    return filePath.substr(0, filePath.length - 3)
+    return this.moduleResolver.resolveModulePathCandidates(userPath, currentFilePath, {
+      appendJsExtension: false
+    })
   }
 
   /**

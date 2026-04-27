@@ -61,6 +61,43 @@ class DefinitionProvider {
   }
 
   /**
+   * Resolves module-like tokens in XML documents (attribute values or text nodes).
+   * @param {TextDocument} document The current document.
+   * @param {Position} position The cursor position.
+   * @returns {Promise<Location|undefined>} Resolved module location, if any.
+   */
+  provideXmlModuleDefinition (document, position) {
+    const modulePathRange = document.getWordRangeAtPosition(position, /[A-Za-z0-9_./!-]+/)
+
+    if (!modulePathRange) {
+      return Promise.resolve()
+    }
+
+    const modulePath = document.getText(modulePathRange)
+
+    // Skip non-module tokens and relative paths.
+    if (!modulePath || modulePath.indexOf('/') < 0 || modulePath.startsWith('./') || modulePath.startsWith('../')) {
+      return Promise.resolve()
+    }
+
+    const filePaths = this.moduleAnalyser.moduleResolver.resolveExistingModulePaths(modulePath, document.fileName)
+
+    if (filePaths.length > 1) {
+      return Promise.all(filePaths.map(filePath => this.searchModule(filePath)))
+    }
+
+    const filePath = filePaths.length
+      ? filePaths[0]
+      : this.moduleAnalyser.moduleResolver.resolveModulePath(modulePath, document.fileName)
+
+    if (!filePath) {
+      return Promise.resolve()
+    }
+
+    return this.searchModule(filePath)
+  }
+
+  /**
    * Checks if a VS Code Position is within an AST node's location range.
    * Handles coordinate system conversion: VS Code uses 0-indexed lines, AST uses 1-indexed.
    * 
@@ -348,6 +385,10 @@ class DefinitionProvider {
     this.moduleAnalyser.startCollectingErrors()
 
     try {
+      if (document.languageId === 'xml') {
+        return await this.provideXmlModuleDefinition(document, position)
+      }
+
       const methodUsageLocations = await this.provideMethodUsageLocations(document, position)
       if (methodUsageLocations) {
         return methodUsageLocations
@@ -359,7 +400,16 @@ class DefinitionProvider {
       // let the built-in definition lookup handle it. The symbol definition
       // can be found, only if its originating module could be found.
       if (moduleDependency) {
+        const filePaths = moduleDependency.filePaths
         const filePath = moduleDependency.filePath
+
+        if (filePaths && filePaths.length > 1) {
+          const locations = await Promise.all(filePaths.map(path => {
+            return this.searchModule(path, moduleDependency.selected)
+          }))
+
+          return locations.filter(Boolean)
+        }
 
         if (filePath) {
           if (moduleDependency.lookupThisMemberInHierarchy || moduleDependency.lookupSuperMemberInHierarchy) {

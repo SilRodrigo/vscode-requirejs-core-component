@@ -17,6 +17,8 @@ This fork is maintained by Rodrigo Silva and is focused on Magento 2 Core Compon
 ## Main Features
 
 - Go to definition for AMD module paths in `define` and `require`.
+- Go to definition for module paths in XML files used by Magento 2 configuration.
+- Multi-path aware resolution: autocomplete and definition lookup can aggregate results from all configured alias paths.
 - Go to symbol definitions across modules.
 - Module path completion and hover support.
 - Rename imported and exported symbols.
@@ -47,7 +49,7 @@ The extension is optimized for patterns commonly used in Magento 2 frontend modu
 Install from a local VSIX package:
 
 ```bash
-code --install-extension ./vscode-requirejs-core-component-1.0.3.vsix --force
+code --install-extension ./vscode-requirejs-core-component-1.0.4.vsix --force
 ```
 
 If your VSIX file has a different name, replace it in the command above.
@@ -81,6 +83,59 @@ Core Component navigation settings:
   - Workspace-relative glob patterns used to find `requirejs-config.js` files when listing applied mixins.
   - Default: `["app/design/frontend/**/requirejs-config.js"]`
   - Example: `["app/design/frontend/**/requirejs-config.js", "app/code/**/requirejs-config.js"]`
+
+Mixin-related settings:
+
+- `requireModuleSupport.enableMixinCodeLensProvider`
+  - Shows CodeLens labels displaying the count of mixins overriding each method (`Mixins: N`).
+  - Automatically updates as you edit files with mixin overrides.
+  - Default: `true`
+  - Example: `false` to disable
+- `requireModuleSupport.enableMixinDecorations`
+  - Highlights methods overridden by applied mixins with a subtle background color.
+  - Hover over highlighted methods to see the list of applied mixins.
+  - Default: `true`
+  - Example: `false` to disable
+
+Conventions that are fixed (not configurable):
+
+- Inheritance is detected through `.extend(...)`.
+- Parent override navigation uses `_super`.
+- Member fallback order remains: `defaults` -> observable declarations -> methods.
+
+You can set these in VS Code settings JSON.
+
+### `.vscode/settings.json`
+
+This file tells the extension where the RequireJS configuration file is located.
+
+```json
+{
+  "requireModuleSupport.configFile": ".vscode/vscode-require-config.js"
+}
+```
+
+### `.vscode/vscode-require-config.js`
+
+This file should expose the RequireJS paths used by the Magento 2 frontend being developed.
+
+The extension also supports fallback arrays in `paths` for the same alias.
+When an alias is configured with multiple paths, resolution is attempted in order:
+the first existing file wins; if none exists, the first configured path is used.
+
+```javascript
+require.config({
+  paths: {
+    Vendor_Core: 'vendor/vendor-name/module-core/view/frontend/web',
+    Vendor_Sales: [
+      'vendor/vendor-name/theme-core-b2b/Vendor_Sales/web',
+      'app/design/frontend/Vendor/theme/Vendor_Sales/web'
+    ],
+    Vendor_Feature: 'app/design/frontend/Vendor/theme/Vendor_Feature/web',
+    Vendor_Shared: 'app/code/Vendor/Shared/view/frontend/web'
+  }
+})
+```
 
 Mixin-related settings:
 
