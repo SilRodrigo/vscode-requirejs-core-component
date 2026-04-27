@@ -31,7 +31,7 @@ function openDocumentAtLocation (location) {
 module.exports = function goToDefinitionModule (definitionProvider, editor) {
   // Default to "Go to Definition" for non-JavaScript files.
   const { languageId } = editor.document
-  if (languageId !== 'javascript' && languageId !== 'javascriptreact') {
+  if (languageId !== 'javascript' && languageId !== 'javascriptreact' && languageId !== 'xml') {
     return commands.executeCommand('editor.action.goToDeclaration')
   }
 

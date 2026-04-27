@@ -2,12 +2,12 @@
   "name": "vscode-requirejs-core-component",
   "displayName": "Core Component Pattern Support",
   "description": "Navigation and symbol support for Magento 2 Core Component modules built with RequireJS/AMD.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "homepage": "https://github.com/SilRodrigo/vscode-requirejs-core-component#readme",
   "author": {
     "name": "Rodrigo Silva",
     "email": "rodrigosil91@gmail.com",
-    "url": ""
+    "url": "https://github.com/SilRodrigo"
   },
   "repository": {
     "type": "git",
@@ -93,6 +93,7 @@
   "activationEvents": [
     "onLanguage:javascript",
     "onLanguage:javascriptreact",
+    "onLanguage:xml",
     "onCommand:requireModuleSupport.goToDefinitionModule",
     "onCommand:requireModuleSupport.renameExportedSymbol",
     "onCommand:requireModuleSupport.showAppliedMixins"

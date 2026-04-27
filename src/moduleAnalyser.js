@@ -1,4 +1,4 @@
-const { workspace, window, Uri } = require('vscode')
+const { workspace, window } = require('vscode')
 const nls = require('vscode-nls')
 const { findDependencies, findCjsDependencies }
 = require('@prantlf/amodro-trace/parse')
@@ -164,7 +164,7 @@ class ModuleAnalyser {
                       } else if (type === 'AssignmentPattern') {
                         // Support parameter "{ local = ... }"
                         if (value.left && value.left.type === 'Identifier') {
-                          result[value.left.name] = { property: key.name, local: rightValue }
+                          result[value.left.name] = { property: key.name, source }
                         }
                       }
                     }
@@ -304,15 +304,20 @@ class ModuleAnalyser {
           const modulePath = identifier.value
 
           if (modulePath && typeof modulePath === 'string') {
-            const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath)
-            try {
-              await workspace.fs.stat(Uri.file(filePath))
-              return { filePath }
-            } catch (_error) {
-              window.showWarningMessage(localize('fileDoesNotExist',
-                '"{0}" does not exist.', workspace.asRelativePath(filePath, false)))
-              return
+            const filePaths = this.moduleResolver.resolveExistingModulePaths(modulePath, currentFilePath)
+
+            if (filePaths.length > 1) {
+              return { filePaths }
             }
+
+            if (filePaths.length === 1) {
+              return { filePath: filePaths[0] }
+            }
+
+            const filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath)
+            window.showWarningMessage(localize('fileDoesNotExist',
+              '"{0}" does not exist.', workspace.asRelativePath(filePath, false)))
+            return
           }
 
           window.showErrorMessage(localize('noStringWithModulePath',
@@ -347,6 +352,10 @@ class ModuleAnalyser {
         if (modulePath) {
           // If the identifier was tracked to o single module dependency,
           // resolve its module path to the file path.
+          moduleDependency.filePaths = this.moduleResolver.resolveExistingModulePaths(
+            modulePath,
+            currentFilePath
+          )
           moduleDependency.filePath = this.moduleResolver.resolveModulePath(modulePath, currentFilePath)
         } else {
           // If the identifier was not tracked to o single module dependency,
