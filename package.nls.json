@@ -9,6 +9,7 @@
   "requirejs.config.showGoToDefinitionModuleCommand": "Shows the \"Go to Definition Module\" command in context menus.",
   "requirejs.config.showRenameExportedSymbolCommand": "Shows the \"Rename Exported Symbol\" command in context menus.",
   "requirejs.config.configFile": "Path of the RequireJS configuration file relative to workspace root",
+  "requirejs.config.nsNavigationConfigFile": "Path of the NS navigation configuration file relative to workspace root",
   "requirejs.config.enableCjsModules": "Parse source files as pure CommonJS modules",
   "requirejs.config.enableJsxModules": "Enable support for the JSX language extension",
   "requirejs.config.enableEsModules": "Enable detection of ES modules in addition to AMD or CJS modules",

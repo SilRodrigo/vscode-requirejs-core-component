@@ -107,11 +107,12 @@ You can set these in VS Code settings JSON.
 
 ### `.vscode/settings.json`
 
-This file tells the extension where the RequireJS configuration file is located.
+This file tells the extension where the RequireJS configuration file and NS navigation config are located.
 
 ```json
 {
-  "requireModuleSupport.configFile": ".vscode/vscode-require-config.js"
+  "requireModuleSupport.configFile": ".vscode/vscode-require-config.js",
+  "requireModuleSupport.nsNavigationConfigFile": ".vscode/vscode-ns-navigation-config.js"
 }
 ```
 
@@ -187,6 +188,36 @@ This file should expose the RequireJS paths used by the Magento 2 frontend being
 ```
 
 Adjust the aliases and paths to match the modules available in your Magento 2 codebase.
+
+### `.vscode/vscode-ns-navigation-config.js`
+
+Optional file used to map `this.useNs(ns => ...)` contexts to a target NS component module.
+When Ctrl+Click is used on `ns.member`, the extension resolves the mapped `nsComponent`
+using the same alias/path rules from RequireJS config (including array fallback paths).
+
+```javascript
+module.exports = {
+  mappings: [
+    {
+      scopeRoot: "Galderma_Sales/js/view/order/create",
+      nsComponent: "Galderma_Sales/js/view/order/create"
+    },
+    {
+      scopeRoot: [
+        "Galderma_Sales/js/view/order/edit",
+        "Galderma_Sales/js/view/order/review"
+      ],
+      nsComponent: "Galderma_Sales/js/view/order/create"
+    }
+  ]
+};
+```
+
+Notes:
+- `scopeRoot` accepts string or array.
+- The most specific scope (longest matching prefix) wins.
+- If no mapping matches, default navigation behavior is kept.
+- Module paths in `nsComponent` are resolved using RequireJS aliases (from `vscode-require-config.js`), including fallback arrays.
 
 ## Show Applied Mixins Requirement
 
