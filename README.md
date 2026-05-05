@@ -35,6 +35,12 @@ This fork is maintained by Rodrigo Silva and is focused on Magento 2 Core Compon
   - `Show Applied Mixins` command to list all mixins affecting current module.
   - **Mixin navigation**: Go to Definition for `this.*` members and `target.extend` calls within mixin files with automatic reverse lookup to mapped target component.
   - **Method usages in mixins**: Ctrl+Click on method name in mixin's `.extend()` shows all call sites in the mixin + parent method in target component for quick navigation.
+- `self = this` alias navigation: Ctrl+Click on `self.member` (or any variable assigned `this`) navigates the same as `this.member`. Works with any alias name, not just `self`.
+- XML Layout support:
+  - CodeLens above `<item>` children in Magento 2 layout XML files showing how many other layout files override that item.
+  - Click on the CodeLens to open a QuickPick and navigate directly to the overriding item.
+  - Blue highlight decoration on `<item>` lines that have overrides.
+  - Ctrl+Click on `<referenceBlock name="...">` navigates to the matching `<block>` definition in other XML layout files.
 
 ## Magento 2 Core Component Focus
 
@@ -83,6 +89,17 @@ Core Component navigation settings:
   - Workspace-relative glob patterns used to find `requirejs-config.js` files when listing applied mixins.
   - Default: `["app/design/frontend/**/requirejs-config.js"]`
   - Example: `["app/design/frontend/**/requirejs-config.js", "app/code/**/requirejs-config.js"]`
+
+XML Layout settings:
+
+- `requireModuleSupport.enableXmlLayoutCodeLensProvider`
+  - Shows CodeLens labels above `<item>` children in layout XML files indicating how many other files override them.
+  - Default: `true`
+  - Example: `false` to disable
+- `requireModuleSupport.xmlLayoutPaths`
+  - Workspace-relative glob patterns used to find Magento 2 XML layout files for override detection and `<referenceBlock>` navigation.
+  - Default: `[]`
+  - Example: `["app/design/**/layout/**/*.xml", "vendor/myvendor/**/layout/**/*.xml"]`
 
 Mixin-related settings:
 

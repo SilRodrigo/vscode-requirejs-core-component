@@ -96,7 +96,8 @@
     "onLanguage:xml",
     "onCommand:requireModuleSupport.goToDefinitionModule",
     "onCommand:requireModuleSupport.renameExportedSymbol",
-    "onCommand:requireModuleSupport.showAppliedMixins"
+    "onCommand:requireModuleSupport.showAppliedMixins",
+    "onCommand:requireModuleSupport.showXmlLayoutOverrides"
   ],
   "contributes": {
     "configuration": {
@@ -132,6 +133,17 @@
           "type": "boolean",
           "default": true,
           "description": "%requirejs.config.enableMixinCodeLensProvider%"
+        },
+        "requireModuleSupport.enableXmlLayoutCodeLensProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableXmlLayoutCodeLensProvider%"
+        },
+        "requireModuleSupport.xmlLayoutPaths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "%requirejs.config.xmlLayoutPaths%"
         },
         "requireModuleSupport.enableMixinDecorations": {
           "type": "boolean",
@@ -275,6 +287,10 @@
       {
         "command": "requireModuleSupport.showAppliedMixins",
         "title": "%requirejs.command.showAppliedMixins.title%"
+      },
+      {
+        "command": "requireModuleSupport.showXmlLayoutOverrides",
+        "title": "%requirejs.command.showXmlLayoutOverrides.title%"
       }
     ],
     "keybindings": [

@@ -2,6 +2,7 @@ const { workspace, Uri, Location, Range, Position } = require('vscode')
 const { readFileSync, statSync } = require('fs')
 const { join, dirname } = require('path')
 const vm = require('vm')
+const { findBlockDefinitions } = require('./xmlLayoutAnalyser')
 const {
   findExtendMemberDefinition,
   findExtendMethodDefinitions,
@@ -277,6 +278,28 @@ class DefinitionProvider {
     }
 
     return this.resolveNsMemberDefinition(document, memberName)
+  }
+
+  /**
+   * Navigates from a <referenceBlock name="X"> to the <block name="X"> definition
+   * in another XML file.
+   */
+  async provideXmlReferenceBlockDefinition (document, position) {
+    const line = document.lineAt(position.line).text
+    const refBlockMatch = line.match(/<referenceBlock\b[^>]*\bname="([^"]+)"/)
+    if (!refBlockMatch) return
+
+    const blockName = refBlockMatch[1]
+    const definitions = await findBlockDefinitions(blockName, document.uri.fsPath, null)
+
+    if (!definitions.length) return
+
+    if (definitions.length === 1) {
+      const { uri, line: lineIdx } = definitions[0]
+      return new Location(uri, new Position(lineIdx, 0))
+    }
+
+    return definitions.map(({ uri, line: lineIdx }) => new Location(uri, new Position(lineIdx, 0)))
   }
 
   /**
@@ -606,6 +629,8 @@ class DefinitionProvider {
 
     try {
       if (document.languageId === 'xml') {
+        const refBlockDef = await this.provideXmlReferenceBlockDefinition(document, position)
+        if (refBlockDef) return refBlockDef
         return await this.provideXmlModuleDefinition(document, position)
       }
 
