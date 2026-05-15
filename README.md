@@ -35,6 +35,12 @@ This fork is maintained by Rodrigo Silva and is focused on Magento 2 Core Compon
   - `Show Applied Mixins` command to list all mixins affecting current module.
   - **Mixin navigation**: Go to Definition for `this.*` members and `target.extend` calls within mixin files with automatic reverse lookup to mapped target component.
   - **Method usages in mixins**: Ctrl+Click on method name in mixin's `.extend()` shows all call sites in the mixin + parent method in target component for quick navigation.
+- `self = this` alias navigation: Ctrl+Click on `self.member` (or any variable assigned `this`) navigates the same as `this.member`. Works with any alias name, not just `self`.
+- XML Layout support:
+  - CodeLens above `<item>` children in Magento 2 layout XML files showing how many other layout files override that item.
+  - Click on the CodeLens to open a QuickPick and navigate directly to the overriding item.
+  - Blue highlight decoration on `<item>` lines that have overrides.
+  - Ctrl+Click on `<referenceBlock name="...">` navigates to the matching `<block>` definition in other XML layout files.
 
 ## Magento 2 Core Component Focus
 
@@ -84,6 +90,17 @@ Core Component navigation settings:
   - Default: `["app/design/frontend/**/requirejs-config.js"]`
   - Example: `["app/design/frontend/**/requirejs-config.js", "app/code/**/requirejs-config.js"]`
 
+XML Layout settings:
+
+- `requireModuleSupport.enableXmlLayoutCodeLensProvider`
+  - Shows CodeLens labels above `<item>` children in layout XML files indicating how many other files override them.
+  - Default: `true`
+  - Example: `false` to disable
+- `requireModuleSupport.xmlLayoutPaths`
+  - Workspace-relative glob patterns used to find Magento 2 XML layout files for override detection and `<referenceBlock>` navigation.
+  - Default: `[]`
+  - Example: `["app/design/**/layout/**/*.xml", "vendor/myvendor/**/layout/**/*.xml"]`
+
 Mixin-related settings:
 
 - `requireModuleSupport.enableMixinCodeLensProvider`
@@ -107,11 +124,12 @@ You can set these in VS Code settings JSON.
 
 ### `.vscode/settings.json`
 
-This file tells the extension where the RequireJS configuration file is located.
+This file tells the extension where the RequireJS configuration file and NS navigation config are located.
 
 ```json
 {
-  "requireModuleSupport.configFile": ".vscode/vscode-require-config.js"
+  "requireModuleSupport.configFile": ".vscode/vscode-require-config.js",
+  "requireModuleSupport.nsNavigationConfigFile": ".vscode/vscode-ns-navigation-config.js"
 }
 ```
 
@@ -187,6 +205,36 @@ This file should expose the RequireJS paths used by the Magento 2 frontend being
 ```
 
 Adjust the aliases and paths to match the modules available in your Magento 2 codebase.
+
+### `.vscode/vscode-ns-navigation-config.js`
+
+Optional file used to map `this.useNs(ns => ...)` contexts to a target NS component module.
+When Ctrl+Click is used on `ns.member`, the extension resolves the mapped `nsComponent`
+using the same alias/path rules from RequireJS config (including array fallback paths).
+
+```javascript
+module.exports = {
+  mappings: [
+    {
+      scopeRoot: "Galderma_Sales/js/view/order/create",
+      nsComponent: "Galderma_Sales/js/view/order/create"
+    },
+    {
+      scopeRoot: [
+        "Galderma_Sales/js/view/order/edit",
+        "Galderma_Sales/js/view/order/review"
+      ],
+      nsComponent: "Galderma_Sales/js/view/order/create"
+    }
+  ]
+};
+```
+
+Notes:
+- `scopeRoot` accepts string or array.
+- The most specific scope (longest matching prefix) wins.
+- If no mapping matches, default navigation behavior is kept.
+- Module paths in `nsComponent` are resolved using RequireJS aliases (from `vscode-require-config.js`), including fallback arrays.
 
 ## Show Applied Mixins Requirement
 

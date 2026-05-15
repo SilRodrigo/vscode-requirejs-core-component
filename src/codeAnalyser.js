@@ -123,6 +123,35 @@ function findModuleExport (astRoot) {
  * @memberof codeParser
  * @inner
  */
+function getThisAliases (astRoot, stopNode) {
+  const aliases = new Set()
+
+  try {
+    walk(astRoot, {
+      VariableDeclarator (node) {
+        if (node === stopNode) throw 0
+        if (node.id && node.id.type === 'Identifier' &&
+          node.init && node.init.type === 'ThisExpression') {
+          aliases.add(node.id.name)
+        }
+      },
+      AssignmentExpression (node) {
+        if (node === stopNode) throw 0
+        if (node.left && node.left.type === 'Identifier' &&
+          node.right && node.right.type === 'ThisExpression') {
+          aliases.add(node.left.name)
+        }
+      }
+    }, node => {
+      if (node === stopNode) throw 0
+    })
+  } catch (err) {
+    if (typeof err !== 'number') throw err
+  }
+
+  return aliases
+}
+
 function getVariableAssignments (astRoot, stopNode) {
   const assignments = {}
 
@@ -466,6 +495,28 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
     isMember = true
   }
 
+  // Detects `self.member` where `self` is a variable assigned `this`
+  // (e.g. `const self = this`), enabling member lookup in the local
+  // module and its parent chain just like `this.member`.
+  function searchForModuleDependencyInSelfMember () {
+    const parent = identifier.parent
+    if (!(parent && parent.type === 'MemberExpression' && parent.computed === false &&
+      parent.object && parent.object.type === 'Identifier' &&
+      parent.property && parent.property.type === 'Identifier' &&
+      parent.property === identifier)) {
+      return
+    }
+
+    const thisAliases = getThisAliases(astRoot, identifier)
+    if (!thisAliases.has(parent.object.name)) {
+      return
+    }
+
+    lookupThisMemberInHierarchy = true
+    selected = identifier.name
+    isMember = true
+  }
+
   // Tracks the path from a local variable to a formal parameter
   // representing the originating module of the dependent object.
   function searchForModuleDependencyInVariables () {
@@ -503,6 +554,7 @@ function findOriginatingModuleDependency (astRoot, identifier, moduleDependencie
   // a dereferenced member call.
   searchForModuleDependencyInSuperCallOverride()
   searchForModuleDependencyInThisExtendMember()
+  searchForModuleDependencyInSelfMember()
   searchForModuleDependencyInExpression()
 
   // Exported identifiers usually equal to formal parameters used for importing.

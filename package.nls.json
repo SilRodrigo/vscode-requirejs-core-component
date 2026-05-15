@@ -5,10 +5,13 @@
   "requirejs.config.enableHoverProvider": "Enables displaying the file-system path, which the module path resolves to, when hovering with the mouse cursor above a string with a module path.",
   "requirejs.config.enableRenameProvider": "Enables cross-module symbol lookup in the \"Rename Symbol\" command.",
   "requirejs.config.enableMixinCodeLensProvider": "Shows CodeLens labels above methods overridden by applied mixins.",
+  "requirejs.config.enableXmlLayoutCodeLensProvider": "Shows CodeLens labels above XML layout items overridden by other layout files.",
+  "requirejs.config.xmlLayoutPaths": "Glob patterns for XML layout files to scan for overrides (e.g. app/code/**/view/**/*.xml).",
   "requirejs.config.enableMixinDecorations": "Highlights methods overridden by applied mixins and shows mixin details on hover.",
   "requirejs.config.showGoToDefinitionModuleCommand": "Shows the \"Go to Definition Module\" command in context menus.",
   "requirejs.config.showRenameExportedSymbolCommand": "Shows the \"Rename Exported Symbol\" command in context menus.",
   "requirejs.config.configFile": "Path of the RequireJS configuration file relative to workspace root",
+  "requirejs.config.nsNavigationConfigFile": "Path of the NS navigation configuration file relative to workspace root",
   "requirejs.config.enableCjsModules": "Parse source files as pure CommonJS modules",
   "requirejs.config.enableJsxModules": "Enable support for the JSX language extension",
   "requirejs.config.enableEsModules": "Enable detection of ES modules in addition to AMD or CJS modules",
@@ -29,5 +32,6 @@
   "requirejs.config.moduleProcessingBatchSize": "How many documents should be opened and searched before cancelling of the operation is possible",
   "requirejs.command.goToDefinitionModule.title": "Go to Definition Module",
   "requirejs.command.renameExportedSymbol.title": "Rename Exported Symbol",
-  "requirejs.command.showAppliedMixins.title": "Show Applied Mixins"
+  "requirejs.command.showAppliedMixins.title": "Show Applied Mixins",
+  "requirejs.command.showXmlLayoutOverrides.title": "Show XML Layout Overrides"
 }

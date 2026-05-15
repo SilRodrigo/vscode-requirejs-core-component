@@ -1,4 +1,5 @@
 const { workspace, window } = require('vscode')
+const { existsSync } = require('fs')
 const nls = require('vscode-nls')
 const { findDependencies, findCjsDependencies }
 = require('@prantlf/amodro-trace/parse')
@@ -304,6 +305,25 @@ class ModuleAnalyser {
           const modulePath = identifier.value
 
           if (modulePath && typeof modulePath === 'string') {
+            // If the literal is the value of a `template:` property, resolve directly as HTML template.
+            const isTemplateProp = identifier.parent &&
+              identifier.parent.type === 'Property' &&
+              (identifier.parent.key.name === 'template' || identifier.parent.key.value === 'template')
+
+            if (isTemplateProp) {
+              const templateCandidates = this.moduleResolver.resolveTemplatePathCandidates(modulePath)
+              const existingTemplate = templateCandidates.find(p => existsSync(p))
+              if (existingTemplate) {
+                return { filePath: existingTemplate }
+              }
+              const fallback = templateCandidates[0]
+              if (fallback) {
+                window.showWarningMessage(localize('fileDoesNotExist',
+                  '"{0}" does not exist.', workspace.asRelativePath(fallback, false)))
+              }
+              return
+            }
+
             const filePaths = this.moduleResolver.resolveExistingModulePaths(modulePath, currentFilePath)
 
             if (filePaths.length > 1) {

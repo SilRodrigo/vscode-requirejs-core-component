@@ -215,6 +215,27 @@ class ModuleResolver {
   }
 
   /**
+   * Resolves a KnockoutJS template path candidate.
+   * In Magento 2, `template: 'Alias/subpath'` maps to `aliasBase/template/subpath.html`.
+   * @param {string} modulePath The template property value (e.g. 'Galderma_Core/container').
+   * @returns {Array<string>} Ordered list of candidate absolute file paths.
+   */
+  resolveTemplatePathCandidates (modulePath) {
+    const { paths } = this.configuration
+    const aliases = Object.keys(paths).sort((a, b) => b.length - a.length)
+
+    const alias = aliases.find(a => modulePath === a || modulePath.startsWith(a + '/'))
+    if (!alias) return []
+
+    const aliasPaths = Array.isArray(paths[alias]) ? paths[alias] : [paths[alias]]
+    const suffix = modulePath.substr(alias.length) // e.g. '/container'
+
+    return aliasPaths
+      .filter(p => typeof p === 'string' && p)
+      .map(p => normalize(requirejs.toUrl(p + '/template' + suffix + '.html')))
+  }
+
+  /**
    * Guesses possible RequireJS module paths, which would resolve
    * to the specified absolute file path. It works well if modules
    * are referenced by paths not starting with "./" or "../" if

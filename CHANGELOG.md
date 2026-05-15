@@ -2,6 +2,24 @@
 
 All notable changes to this fork are documented in this file.
 
+## [1.0.5] - 2026-05-05
+
+### Added
+
+- NS component navigation: Go to Definition now supports `ns.*` members within `this.useNs(callback)` contexts.
+- NS Navigation Configuration file (`vscode-ns-navigation-config.js`) for mapping scope roots to NS components.
+- New setting `requireModuleSupport.nsNavigationConfigFile` to enable/configure NS navigation.
+- Context-aware detection of `useNs` callbacks via AST traversal to avoid false positives.
+- Scope matching with longest-prefix precedence: more specific scope roots take priority.
+- NS component paths are resolved using the same RequireJS alias rules (including array fallback).
+- `self = this` alias navigation: Go to Definition on `self.member` (or any variable assigned `this`) behaves the same as `this.member`, supporting arbitrary alias names.
+- XML Layout CodeLens: shows override count above `<item>` children inside Magento 2 layout XML files.
+- Click on XML Layout CodeLens opens a QuickPick list of overriding files and navigates to the overriding item.
+- Blue highlight decoration on `<item>` lines that have overrides in other layout files.
+- Go to Definition on `<referenceBlock name="...">` navigates to the matching `<block>` definition in other XML files.
+- New setting `requireModuleSupport.enableXmlLayoutCodeLensProvider` to enable/disable XML Layout CodeLens (default: `true`).
+- New setting `requireModuleSupport.xmlLayoutPaths` to configure glob patterns for scanning XML layout files.
+
 ## [1.0.4] - 2026-04-27
 
 ### Added

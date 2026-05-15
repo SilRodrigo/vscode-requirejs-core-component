@@ -1,4 +1,8 @@
 const { workspace, Uri, Location, Range, Position } = require('vscode')
+const { readFileSync, statSync } = require('fs')
+const { join, dirname } = require('path')
+const vm = require('vm')
+const { findBlockDefinitions } = require('./xmlLayoutAnalyser')
 const {
   findExtendMemberDefinition,
   findExtendMethodDefinitions,
@@ -17,6 +21,10 @@ function normalizeLookupMaxLevels (value, fallback) {
   return Number.isInteger(value) && value >= 0 ? value : fallback
 }
 
+function normalizePathPrefix (path) {
+  return path.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+}
+
 /**
  * Provides the location of the definition of a selected identifier, if it is
  * located in a separate RequireJS module.
@@ -28,6 +36,11 @@ class DefinitionProvider {
    */
   constructor (moduleAnalyser) {
     hostOrCreateDisposable(this, 'moduleAnalyser', ModuleAnalyser, moduleAnalyser)
+    this.nsNavigationConfigCache = {
+      configPath: undefined,
+      mtimeMs: undefined,
+      mappings: []
+    }
   }
 
   getSettings () {
@@ -58,6 +71,235 @@ class DefinitionProvider {
     return {
       observableDeclarationMethodNames: settings.get('observableDeclarationMethodNames') || ['declareObservables']
     }
+  }
+
+  getNsNavigationConfigFile () {
+    return this.getSettings().get('nsNavigationConfigFile') || ''
+  }
+
+  getWorkspaceRootPath () {
+    if (workspace.workspaceFile && workspace.workspaceFile.scheme !== 'untitled') {
+      return dirname(workspace.workspaceFile.fsPath)
+    }
+
+    if (workspace.workspaceFolders && workspace.workspaceFolders.length) {
+      return workspace.workspaceFolders[0].uri.fsPath
+    }
+
+    return process.env.VSCODE_REQUIREJS_WORKSPACE || ''
+  }
+
+  getNsNavigationMappings () {
+    const configFile = this.getNsNavigationConfigFile()
+    const rootPath = this.getWorkspaceRootPath()
+
+    if (!configFile || !rootPath) {
+      return []
+    }
+
+    const configPath = join(rootPath, configFile)
+
+    try {
+      const stats = statSync(configPath)
+      const cached = this.nsNavigationConfigCache
+
+      if (cached.configPath === configPath && cached.mtimeMs === stats.mtimeMs) {
+        return cached.mappings
+      }
+
+      // Load config file - supports both .js (module.exports) and .json formats
+      let config
+      const fileContent = readFileSync(configPath, 'utf8')
+
+      try {
+        config = JSON.parse(fileContent)
+      } catch (_jsonError) {
+        try {
+          const sandbox = { module: { exports: {} } }
+          vm.runInNewContext(fileContent, sandbox)
+          config = sandbox.module.exports
+        } catch (_vmError) {
+          return []
+        }
+      }
+
+      const mappings = (config.mappings || [])
+        .filter(mapping => mapping && typeof mapping.nsComponent === 'string')
+        .map(mapping => {
+          const scopeRoot = mapping.scopeRoot
+          const scopeRoots = (Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot])
+            .filter(root => typeof root === 'string' && root.trim())
+            .map(root => normalizePathPrefix(root.trim()))
+
+          return {
+            scopeRoots,
+            nsComponent: mapping.nsComponent.trim()
+          }
+        })
+        .filter(mapping => mapping.scopeRoots.length && mapping.nsComponent)
+
+      this.nsNavigationConfigCache = {
+        configPath,
+        mtimeMs: stats.mtimeMs,
+        mappings
+      }
+
+      return mappings
+    } catch (_error) {
+      return []
+    }
+  }
+
+  resolveNsComponentModulePaths (currentFilePath) {
+    const mappings = this.getNsNavigationMappings()
+
+    if (!mappings.length) {
+      return []
+    }
+
+    const currentModulePaths = this.moduleAnalyser.moduleResolver.unresolveFilePath(currentFilePath)
+
+    if (!currentModulePaths.length) {
+      return []
+    }
+
+    const normalizedCurrentModulePaths = currentModulePaths.map(path => normalizePathPrefix(path))
+
+    let matched
+
+    mappings.forEach(mapping => {
+      mapping.scopeRoots.forEach(scopeRoot => {
+        const matchedModulePath = normalizedCurrentModulePaths.find(modulePath => {
+          return modulePath === scopeRoot || modulePath.startsWith(scopeRoot + '/')
+        })
+
+        if (!matchedModulePath) {
+          return
+        }
+
+        if (!matched || scopeRoot.length > matched.scopeRoot.length) {
+          matched = {
+            scopeRoot,
+            modulePath: matchedModulePath,
+            nsComponent: mapping.nsComponent
+          }
+        }
+      })
+    })
+
+    if (!matched) {
+      return []
+    }
+
+    const candidates = [matched.nsComponent, matched.nsComponent + '/index']
+    const suffix = matched.modulePath.substr(matched.scopeRoot.length)
+
+    if (suffix && suffix !== '/' && !matched.nsComponent.endsWith(suffix)) {
+      const withSuffix = matched.nsComponent + suffix
+      candidates.push(withSuffix, withSuffix + '/index')
+    }
+
+    return Array.from(new Set(candidates))
+  }
+
+  async searchNsMemberInModule (filePath, memberName) {
+    const state = {
+      depth: 0,
+      visited: new Set(),
+      maxDepth: this.getLookupMaxLevels(),
+      resolutionOptions: this.getExtendMemberResolutionOptions(),
+      fallbackFilePaths: []
+    }
+
+    const location = await this.searchExtendMemberInHierarchy(filePath, memberName, state)
+
+    if (location) {
+      return location
+    }
+
+    return this.searchModule(filePath, memberName)
+  }
+
+  resolveNsMemberDefinition (document, memberName) {
+    const nsComponentModulePath = this.resolveNsComponentModulePaths(document.fileName)[0]
+
+    if (!nsComponentModulePath) {
+      return
+    }
+
+    const filePaths = this.moduleAnalyser.moduleResolver.resolveExistingModulePaths(nsComponentModulePath, document.fileName)
+    const filePath = filePaths.length
+      ? filePaths[0]
+      : this.moduleAnalyser.moduleResolver.resolveModulePath(nsComponentModulePath, document.fileName)
+
+    if (!filePath) {
+      return
+    }
+
+    return this.searchNsMemberInModule(filePath, memberName)
+  }
+
+  provideUseNsMemberDefinition (document, position) {
+    const range = document.getWordRangeAtPosition(position)
+
+    if (!range) {
+      return
+    }
+
+    const memberName = document.getText(range)
+    if (!memberName) {
+      return
+    }
+
+    const line = document.lineAt(position.line).text
+    const left = line.slice(0, range.start.character)
+    const objectMatch = left.match(/([A-Za-z_$][\w$]*)\s*\.\s*$/)
+
+    if (!objectMatch) {
+      return
+    }
+
+    const nsParameterName = objectMatch[1]
+
+    const fullText = document.getText()
+    const caretOffset = document.offsetAt(range.start)
+    const contextBefore = fullText.slice(0, caretOffset)
+    const useNsPattern = /useNs\s*\(\s*(?:function\s*\(\s*([A-Za-z_$][\w$]*)\s*\)|\(\s*([A-Za-z_$][\w$]*)\s*\)\s*=>|([A-Za-z_$][\w$]*)\s*=>)/g
+
+    let callbackParamName
+    let match
+
+    while ((match = useNsPattern.exec(contextBefore))) {
+      callbackParamName = match[1] || match[2] || match[3]
+    }
+
+    if (!callbackParamName || callbackParamName !== nsParameterName) {
+      return
+    }
+
+    return this.resolveNsMemberDefinition(document, memberName)
+  }
+
+  /**
+   * Navigates from a <referenceBlock name="X"> to the <block name="X"> definition
+   * in another XML file.
+   */
+  async provideXmlReferenceBlockDefinition (document, position) {
+    const line = document.lineAt(position.line).text
+    const refBlockMatch = line.match(/<referenceBlock\b[^>]*\bname="([^"]+)"/)
+    if (!refBlockMatch) return
+
+    const blockName = refBlockMatch[1]
+    const definitions = await findBlockDefinitions(blockName, document.uri.fsPath, null)
+
+    if (!definitions.length) return
+
+    if (definitions.length === 1) {
+      const { uri, line: lineIdx } = definitions[0]
+      return new Location(uri, new Position(lineIdx, 0))
+    }
+
+    return definitions.map(({ uri, line: lineIdx }) => new Location(uri, new Position(lineIdx, 0)))
   }
 
   /**
@@ -384,9 +626,17 @@ class DefinitionProvider {
   async provideDefinition (document, position) {
     this.moduleAnalyser.startCollectingErrors()
 
+
     try {
       if (document.languageId === 'xml') {
+        const refBlockDef = await this.provideXmlReferenceBlockDefinition(document, position)
+        if (refBlockDef) return refBlockDef
         return await this.provideXmlModuleDefinition(document, position)
+      }
+
+      const useNsDefinition = await this.provideUseNsMemberDefinition(document, position)
+      if (useNsDefinition) {
+        return useNsDefinition
       }
 
       const methodUsageLocations = await this.provideMethodUsageLocations(document, position)

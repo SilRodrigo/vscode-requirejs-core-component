@@ -2,7 +2,7 @@
   "name": "vscode-requirejs-core-component",
   "displayName": "Core Component Pattern Support",
   "description": "Navigation and symbol support for Magento 2 Core Component modules built with RequireJS/AMD.",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "homepage": "https://github.com/SilRodrigo/vscode-requirejs-core-component#readme",
   "author": {
     "name": "Rodrigo Silva",
@@ -96,7 +96,8 @@
     "onLanguage:xml",
     "onCommand:requireModuleSupport.goToDefinitionModule",
     "onCommand:requireModuleSupport.renameExportedSymbol",
-    "onCommand:requireModuleSupport.showAppliedMixins"
+    "onCommand:requireModuleSupport.showAppliedMixins",
+    "onCommand:requireModuleSupport.showXmlLayoutOverrides"
   ],
   "contributes": {
     "configuration": {
@@ -133,6 +134,17 @@
           "default": true,
           "description": "%requirejs.config.enableMixinCodeLensProvider%"
         },
+        "requireModuleSupport.enableXmlLayoutCodeLensProvider": {
+          "type": "boolean",
+          "default": true,
+          "description": "%requirejs.config.enableXmlLayoutCodeLensProvider%"
+        },
+        "requireModuleSupport.xmlLayoutPaths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "%requirejs.config.xmlLayoutPaths%"
+        },
         "requireModuleSupport.enableMixinDecorations": {
           "type": "boolean",
           "default": true,
@@ -152,6 +164,11 @@
           "type": "string",
           "default": "",
           "description": "%requirejs.config.configFile%"
+        },
+        "requireModuleSupport.nsNavigationConfigFile": {
+          "type": "string",
+          "default": "",
+          "description": "%requirejs.config.nsNavigationConfigFile%"
         },
         "requireModuleSupport.enableCjsModules": {
           "type": "boolean",
@@ -270,6 +287,10 @@
       {
         "command": "requireModuleSupport.showAppliedMixins",
         "title": "%requirejs.command.showAppliedMixins.title%"
+      },
+      {
+        "command": "requireModuleSupport.showXmlLayoutOverrides",
+        "title": "%requirejs.command.showXmlLayoutOverrides.title%"
       }
     ],
     "keybindings": [
