@@ -24,7 +24,7 @@ class XmlLayoutCodeLensProvider {
       return new CodeLens(range, {
         title: count === 1 ? '1 override' : `${count} overrides`,
         command: 'requireModuleSupport.showXmlLayoutOverrides',
-        arguments: [document.uri, item.name]
+        arguments: [document.uri, item.path]
       })
     })
   }
