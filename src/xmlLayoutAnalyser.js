@@ -18,13 +18,17 @@ function getBlockName (text) {
 /**
  * Finds all <item> elements that are direct children of any <item name="children">
  * at any depth, using indentation to determine the parent-child relationship.
+ * Each result includes a 'path' string representing the full ancestry of structural
+ * item names joined by '/', e.g. 'action-container/filter/customer'.
+ * Items with the same name at different nesting levels produce different paths.
  * @param {string} text
- * @returns {Array<{name: string, line: number}>}
+ * @returns {Array<{name: string, line: number, path: string}>}
  */
 function findChildrenItems (text) {
   const lines = text.split('\n')
   const result = []
-  const stack = [] // {childrenIndent, directChildIndent}
+  // Each entry: { kind: 'children'|'item', name: string, indent: number }
+  const stack = []
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
@@ -32,23 +36,31 @@ function findChildrenItems (text) {
 
     const indent = (line.match(/^(\s*)/)[1] || '').length
 
-    while (stack.length && indent <= stack[stack.length - 1].childrenIndent) {
+    // Pop all stack entries at same or deeper indent
+    while (stack.length && indent <= stack[stack.length - 1].indent) {
       stack.pop()
     }
 
     if (/<item\s[^>]*name="children"/.test(line)) {
-      let j = i + 1
-      while (j < lines.length && !lines[j].trim()) j++
-      const directChildIndent = j < lines.length
-        ? (lines[j].match(/^(\s*)/)[1] || '').length
-        : indent + 4
-      stack.push({ childrenIndent: indent, directChildIndent })
+      stack.push({ kind: 'children', name: 'children', indent })
       continue
     }
 
-    if (stack.length && indent === stack[stack.length - 1].directChildIndent) {
-      const m = line.match(/<item\s[^>]*name="([^"]+)"/)
-      if (m) result.push({ name: m[1], line: i })
+    const m = line.match(/<item\s[^>]*name="([^"]+)"/)
+    if (m) {
+      const name = m[1]
+      const parent = stack.length > 0 ? stack[stack.length - 1] : null
+
+      if (parent && parent.kind === 'children') {
+        const path = stack
+          .filter(s => s.kind === 'item')
+          .map(s => s.name)
+          .concat(name)
+          .join('/')
+        result.push({ name, line: i, path })
+      }
+
+      stack.push({ kind: 'item', name, indent })
     }
   }
 
@@ -56,15 +68,15 @@ function findChildrenItems (text) {
 }
 
 /**
- * Returns the names of children items that a given override XML declares for a specific block.
+ * Returns the paths of children items that a given override XML declares for a specific block.
  * @param {string} text XML content of the overriding file.
  * @param {string} blockName Block name to look for.
- * @returns {string[]}
+ * @returns {string[]} Array of item paths (e.g. 'customer', 'action-container/filter/customer').
  */
-function getOverridingItemNames (text, blockName) {
+function getOverridingItemPaths (text, blockName) {
   const escaped = blockName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   if (!new RegExp(`<referenceBlock\\b[^>]*\\bname="${escaped}"`).test(text)) return []
-  return findChildrenItems(text).map(item => item.name)
+  return findChildrenItems(text).map(item => item.path)
 }
 
 /**
@@ -94,9 +106,9 @@ async function findOverridesForDocument (document, cancellationToken) {
   const allUris = [].concat(...uriArrays)
   const currentPath = document.uri.fsPath
 
-  // Map: itemName -> [{uri, line}]
+  // Map: itemPath -> [{uri, line}]
   const overrideMap = {}
-  childrenItems.forEach(item => { overrideMap[item.name] = [] })
+  childrenItems.forEach(item => { overrideMap[item.path] = [] })
 
   for (const uri of allUris) {
     if (uri.fsPath === currentPath) continue
@@ -104,23 +116,22 @@ async function findOverridesForDocument (document, cancellationToken) {
 
     try {
       const content = readFileSync(uri.fsPath, 'utf8')
-      const names = getOverridingItemNames(content, blockName)
-      if (!names.length) continue
+      const paths = getOverridingItemPaths(content, blockName)
+      if (!paths.length) continue
 
-      // Find the actual line of each item in the overriding file
       const overridingItems = findChildrenItems(content)
-      names.forEach(name => {
-        if (!(name in overrideMap)) return
-        const found = overridingItems.find(i => i.name === name)
-        overrideMap[name].push({ uri, line: found ? found.line : 0 })
-      })
+      for (const overItem of overridingItems) {
+        if (overItem.path in overrideMap) {
+          overrideMap[overItem.path].push({ uri, line: overItem.line })
+        }
+      }
     } catch (_e) {
       // skip unreadable files
     }
   }
 
   const results = childrenItems
-    .map(item => ({ name: item.name, line: item.line, overridingFiles: overrideMap[item.name] }))
+    .map(item => ({ name: item.name, line: item.line, path: item.path, overridingFiles: overrideMap[item.path] }))
     .filter(item => item.overridingFiles.length > 0)
 
   cache.set(document.uri.fsPath, { version: document.version, results })

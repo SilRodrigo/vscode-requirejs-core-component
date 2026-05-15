@@ -2,6 +2,19 @@
 
 All notable changes to this fork are documented in this file.
 
+## [1.0.6] - 2026-05-15
+
+### Fixed
+
+- XML Layout CodeLens now correctly distinguishes items with the same name at different nesting levels using full ancestry path (e.g. `customer` vs `action-container/filter/customer`).
+- Override count and navigation no longer bleed across items that share a name but live at different depths in the XML hierarchy.
+
+### Changed
+
+- `findChildrenItems` now returns a `path` field (ancestor item names joined by `/`) in addition to `name` and `line`.
+- Override map is keyed by full path instead of name, preventing false matches.
+- CodeLens command arguments and QuickPick labels now use the full item path for disambiguation.
+
 ## [1.0.5] - 2026-05-05
 
 ### Added

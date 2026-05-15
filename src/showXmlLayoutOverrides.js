@@ -11,7 +11,7 @@ function openAtLine (uri, line) {
     })
 }
 
-module.exports = async function showXmlLayoutOverrides (documentUri, itemName) {
+module.exports = async function showXmlLayoutOverrides (documentUri, itemPath) {
   let uri = documentUri
 
   if (typeof uri === 'string') {
@@ -22,12 +22,12 @@ module.exports = async function showXmlLayoutOverrides (documentUri, itemName) {
   const cancellationTokenSource = new CancellationTokenSource()
   const items = await findOverridesForDocument(document, cancellationTokenSource.token)
 
-  let item = items.find(i => i.name === itemName)
+  let item = items.find(i => i.path === itemPath)
 
   if (!item && items.length) {
     const picked = await window.showQuickPick(
       items.map(i => ({
-        label: i.name,
+        label: i.path,
         description: `${i.overridingFiles.length} override(s)`,
         item: i
       })),
@@ -47,7 +47,7 @@ module.exports = async function showXmlLayoutOverrides (documentUri, itemName) {
       label: workspace.asRelativePath(f.uri, false),
       file: f
     })),
-    { title: `Overrides for "${item.name}"`, placeHolder: 'Select a file to open' }
+    { title: `Overrides for "${item.path}"`, placeHolder: 'Select a file to open' }
   )
 
   if (picked) {
